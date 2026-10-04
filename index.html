@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GenAI SkillBuilding: Prelab Portal</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f4fa;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #1a1a1a;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #1a1a1a;
+    }
+
+    .logo span { color: #f5c100; }
+
+    .subtitle {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 32px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: #f0f4fa;
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 28px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 7px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      background: transparent;
+      color: #888;
+      transition: all 0.15s;
+    }
+
+    .tab.active {
+      background: white;
+      color: #1a55a8;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #444;
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 16px;
+      transition: border-color 0.15s;
+      outline: none;
+    }
+
+    input:focus { border-color: #1a55a8; }
+
+    button.primary {
+      width: 100%;
+      padding: 12px;
+      background: #1a55a8;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 4px;
+    }
+
+    button.primary:hover { background: #13407f; }
+    button.primary:disabled { background: #ccc; cursor: not-allowed; }
+
+    .accent-bar {
+      height: 4px;
+      background: linear-gradient(90deg, #1a55a8, #f5c100);
+      border-radius: 4px;
+      margin-bottom: 28px;
+    }
+
+    .message {
+      margin-top: 16px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: none;
+    }
+
+    .message.error { background: #fef2f0; color: #c0392b; border: 1px solid #f5c6c0; }
+    .message.success { background: #f0f6ff; color: #1a55a8; border: 1px solid #b8d0f5; }
+    .message.show { display: block; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">GenAI <span>SkillBuilding</span></div>
+  <div class="subtitle">Prelab Portal · Student Login</div>
+  <div class="accent-bar"></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('login')">Log in</button>
+    <button class="tab" onclick="switchTab('signup')">Sign up</button>
+  </div>
+
+  <!-- Login form -->
+  <div id="login-form">
+    <label>Email</label>
+    <input type="email" id="login-email" placeholder="you@example.com">
+    <label>Password</label>
+    <input type="password" id="login-password" placeholder="••••••••">
+    <button class="primary" onclick="login()">Log in</button>
+  </div>
+
+  <!-- Signup form -->
+  <div id="signup-form" style="display:none">
+    <label>Full name</label>
+    <input type="text" id="signup-name" placeholder="Ada Lovelace">
+    <label>Email</label>
+    <input type="email" id="signup-email" placeholder="you@example.com">
+    <label>Password</label>
+    <input type="password" id="signup-password" placeholder="8+ characters">
+    <button class="primary" onclick="signup()">Create account</button>
+  </div>
+
+  <div class="message" id="message"></div>
+</div>
+
+<script>
+  // ── PASTE YOUR KEYS HERE ──────────────────────────────
+  const SUPABASE_URL = 'https://jfjegonhtmmuublikxpk.supabase.co'
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmamVnb25odG1tdXVibGlreHBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMTAxMDEsImV4cCI6MjEwNjY4NjEwMX0.1xEklI15Df1nRSgc9JmIz7dytqS2uWB_hV9ec2PFofM'
+  // ─────────────────────────────────────────────────────
+
+  const { createClient } = supabase
+  const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+  function switchTab(tab) {
+    document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none'
+    document.getElementById('signup-form').style.display = tab === 'signup' ? 'block' : 'none'
+    document.querySelectorAll('.tab').forEach((t, i) => {
+      t.classList.toggle('active', (tab === 'login') ? i === 0 : i === 1)
+    })
+    hideMessage()
+  }
+
+  function showMessage(text, type) {
+    const el = document.getElementById('message')
+    el.textContent = text
+    el.className = `message ${type} show`
+  }
+
+  function hideMessage() {
+    document.getElementById('message').className = 'message'
+  }
+
+  async function login() {
+    const email = document.getElementById('login-email').value.trim()
+    const password = document.getElementById('login-password').value
+    if (!email || !password) return showMessage('Please fill in all fields.', 'error')
+
+    const btn = document.querySelector('#login-form button')
+    btn.disabled = true
+    btn.textContent = 'Logging in...'
+
+    const { error } = await db.auth.signInWithPassword({ email, password })
+
+    if (error) {
+      showMessage(error.message, 'error')
+      btn.disabled = false
+      btn.textContent = 'Log in'
+    } else {
+      showMessage('Logged in! Redirecting...', 'success')
+      setTimeout(() => window.location.href = 'dashboard.html', 1000)
+    }
+  }
+
+  async function signup() {
+    const name = document.getElementById('signup-name').value.trim()
+    const email = document.getElementById('signup-email').value.trim()
+    const password = document.getElementById('signup-password').value
+    if (!name || !email || !password) return showMessage('Please fill in all fields.', 'error')
+    if (password.length < 8) return showMessage('Password must be at least 8 characters.', 'error')
+
+    const btn = document.querySelector('#signup-form button')
+    btn.disabled = true
+    btn.textContent = 'Creating account...'
+
+    const { error } = await db.auth.signUp({
+      email, password,
+      options: { data: { full_name: name } }
+    })
+
+    if (error) {
+      showMessage(error.message, 'error')
+      btn.disabled = false
+      btn.textContent = 'Create account'
+    } else {
+      showMessage('Account created! Check your email to confirm, then log in.', 'success')
+      btn.disabled = false
+      btn.textContent = 'Create account'
+    }
+  }
+</script>
+</body>
+</html>

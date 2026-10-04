@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prelab 2 — GenAI SkillBuilding</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root {
+    --bg:#f8f7f4;--surface:#fff;--surface-2:#f1efe8;
+    --border:rgba(0,0,0,0.1);--border-strong:rgba(0,0,0,0.18);
+    --text:#1a1a18;--text-2:#555550;--text-3:#888780;
+    --accent:#0f6e56;--accent-bg:#e1f5ee;--accent-border:#9fe1cb;--accent-text:#085041;
+    --purple:#5034c4;--purple-bg:#eeedfe;--purple-border:#afa9ec;--purple-text:#3c3489;
+    --success:#0f6e56;--success-bg:#e1f5ee;--success-border:#9fe1cb;
+    --danger:#993c1d;--danger-bg:#faece7;--danger-border:#f5c4b3;
+    --warning-bg:#faeeda;--warning-text:#633806;--warning-border:#fac775;
+    --coral:#d85a30;--teal:#1d9e75;
+    --radius:8px;--mono:'Fira Code','Courier New',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.7;}
+  .app{display:flex;min-height:100vh;}
+  .sidebar{width:224px;flex-shrink:0;background:var(--surface);border-right:0.5px solid var(--border-strong);position:sticky;top:0;height:100vh;overflow-y:auto;padding:1.5rem 0;}
+  .sidebar-logo{padding:0 1.25rem 1.25rem;border-bottom:0.5px solid var(--border);margin-bottom:.75rem;}
+  .sidebar-logo .label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);}
+  .sidebar-logo h2{font-size:14px;font-weight:500;color:var(--text);margin-top:2px;}
+  .nav-item{display:flex;align-items:center;gap:8px;padding:7px 1.25rem;font-size:13px;color:var(--text-2);cursor:pointer;border-left:2px solid transparent;transition:all .15s;user-select:none;}
+  .nav-item:hover{color:var(--text);background:var(--surface-2);}
+  .nav-item.active{color:var(--accent-text);border-left-color:var(--accent);background:var(--accent-bg);font-weight:500;}
+  .nav-item .dot{width:6px;height:6px;border-radius:50%;background:var(--border-strong);flex-shrink:0;}
+  .nav-item.done .dot{background:var(--success);}
+  .nav-item.active .dot{background:var(--accent);}
+  .nav-section-label{padding:.75rem 1.25rem .25rem;font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);}
+  .main{flex:1;padding:2.5rem 3rem;max-width:780px;}
+  .section{display:none;animation:fadein .2s ease;}
+  .section.active{display:block;}
+  @keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .section-tag{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-text);background:var(--accent-bg);display:inline-block;padding:3px 10px;border-radius:99px;margin-bottom:1rem;border:.5px solid var(--accent-border);}
+  h1{font-size:26px;font-weight:500;margin-bottom:.5rem;line-height:1.3;}
+  h2{font-size:18px;font-weight:500;margin:2rem 0 .75rem;}
+  h3{font-size:15px;font-weight:500;margin:1.5rem 0 .5rem;}
+  p{margin-bottom:1rem;color:var(--text-2);}
+  p strong{color:var(--text);font-weight:500;}
+  .subtitle{font-size:16px;color:var(--text-2);margin-bottom:2rem;}
+  ul,ol{padding-left:1.5rem;margin-bottom:1rem;color:var(--text-2);}
+  li{margin-bottom:.35rem;}
+  li strong{color:var(--text);}
+  .card{background:var(--surface);border:.5px solid var(--border-strong);border-radius:12px;padding:1.25rem 1.5rem;margin:1.25rem 0;}
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:1.25rem 0;}
+  .card-sm{background:var(--surface);border:.5px solid var(--border-strong);border-radius:12px;padding:1rem 1.25rem;}
+  .card-sm h4{font-size:14px;font-weight:500;margin-bottom:.25rem;}
+  .card-sm p{font-size:13px;color:var(--text-2);margin:0;}
+  .callout{border-radius:8px;padding:.875rem 1rem;margin:1rem 0;font-size:14px;border-left:3px solid;}
+  .callout-info{background:var(--accent-bg);border-color:var(--accent);color:var(--accent-text);}
+  .callout-tip{background:var(--purple-bg);border-color:var(--purple);color:var(--purple-text);}
+  .callout-warn{background:var(--warning-bg);border-color:#ba7517;color:var(--warning-text);}
+  .callout-colab{background:#fff8e6;border-color:#f0b429;color:#7a4f00;border-left:3px solid #f0b429;}
+  .callout strong{font-weight:500;display:block;margin-bottom:2px;}
+  code{font-family:var(--mono);font-size:12.5px;background:var(--surface-2);padding:1px 5px;border-radius:4px;color:var(--text);}
+  pre{background:#1e1e1e;color:#d4d4d4;border-radius:8px;padding:1rem 1.25rem;font-family:var(--mono);font-size:12px;line-height:1.65;overflow-x:auto;margin:1rem 0;}
+  pre .c{color:#6a9955;}pre .k{color:#569cd6;}pre .s{color:#ce9178;}pre .n{color:#9cdcfe;}pre .y{color:#9cdcfe;}
+  .quiz-option{display:flex;align-items:flex-start;gap:10px;padding:.75rem 1rem;border:.5px solid var(--border-strong);border-radius:8px;margin-bottom:8px;cursor:pointer;transition:.15s;font-size:14px;color:var(--text-2);background:var(--surface);}
+  .quiz-option:hover{border-color:var(--accent-border);background:var(--accent-bg);}
+  .quiz-option.correct{border-color:var(--success);background:var(--success-bg);color:var(--success);}
+  .quiz-option.wrong{border-color:var(--danger);background:var(--danger-bg);color:var(--danger);}
+  .quiz-option .letter{width:20px;height:20px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;color:var(--text-3);margin-top:1px;}
+  .quiz-option.correct .letter{background:var(--success);color:white;}
+  .quiz-option.wrong .letter{background:var(--danger);color:white;}
+  .quiz-feedback{display:none;padding:.75rem 1rem;border-radius:8px;font-size:13.5px;margin-top:.75rem;}
+  .quiz-feedback.show{display:block;}
+  .quiz-feedback.correct{background:var(--success-bg);color:var(--success);border:.5px solid var(--success-border);}
+  .quiz-feedback.wrong{background:var(--danger-bg);color:var(--danger);border:.5px solid var(--danger-border);}
+  textarea{width:100%;border:.5px solid var(--border-strong);border-radius:8px;padding:.75rem 1rem;font-size:14px;font-family:inherit;color:var(--text);background:var(--surface);resize:vertical;min-height:100px;transition:.15s;outline:none;}
+  textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-bg);}
+  textarea::placeholder{color:var(--text-3);}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:.5px solid var(--border-strong);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13.5px;font-weight:500;cursor:pointer;transition:.15s;}
+  .btn:hover{background:var(--surface-2);}
+  .btn:active{transform:scale(.98);}
+  .btn-primary{background:var(--accent);color:white;border-color:var(--accent);}
+  .btn-primary:hover{background:var(--accent-text);}
+  .btn-sm{padding:5px 12px;font-size:12.5px;}
+  .btn[disabled]{opacity:.4;cursor:not-allowed;}
+  .btn[disabled]:hover{background:var(--surface);transform:none;}
+  hr{border:none;border-top:.5px solid var(--border);margin:2rem 0;}
+  .read-check{display:flex;align-items:center;gap:10px;padding:.75rem 1rem;background:var(--surface-2);border-radius:8px;margin-top:1.25rem;cursor:pointer;font-size:14px;color:var(--text-2);border:.5px solid var(--border);user-select:none;transition:.15s;}
+  .read-check:hover{background:var(--surface);}
+  .read-check.checked{background:var(--success-bg);color:var(--success);border-color:var(--success-border);}
+  .read-check .box{width:18px;height:18px;border:1.5px solid var(--border-strong);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;}
+  .read-check.checked .box{background:var(--success);border-color:var(--success);color:white;}
+  .nav-buttons{display:flex;gap:10px;margin-top:2.5rem;padding-top:1.5rem;border-top:.5px solid var(--border);}
+  .section-hint{font-size:13px;color:var(--text-3);font-style:italic;margin-bottom:.75rem;}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+  .shake{animation:shake .35s ease;}
+
+  /* Pattern expand cards */
+  .pattern-card{background:var(--surface);border:.5px solid var(--border-strong);border-radius:12px;overflow:hidden;margin-bottom:10px;cursor:pointer;transition:.15s;}
+  .pattern-card:hover{border-color:var(--accent-border);}
+  .pattern-card.open{border-color:var(--accent);}
+  .pattern-header{display:flex;align-items:center;gap:12px;padding:1rem 1.25rem;}
+  .pattern-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+  .pattern-header h4{font-size:15px;font-weight:500;margin:0;}
+  .pattern-header p{font-size:13px;color:var(--text-2);margin:0;}
+  .pattern-chevron{margin-left:auto;color:var(--text-3);font-size:12px;transition:.2s;}
+  .pattern-card.open .pattern-chevron{transform:rotate(180deg);}
+  .pattern-body{display:none;border-top:.5px solid var(--border);padding:1.25rem;}
+  .pattern-card.open .pattern-body{display:block;}
+  .diagram-wrap{background:var(--surface-2);border-radius:8px;padding:1rem;margin:.75rem 0;overflow-x:auto;}
+
+  /* Skill field */
+  .skill-field{margin-bottom:1rem;}
+  .skill-field label{display:block;font-size:12.5px;font-weight:500;color:var(--text-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;}
+  .skill-field input{width:100%;padding:8px 12px;border:.5px solid var(--border-strong);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:var(--surface);outline:none;transition:.15s;}
+  .skill-field input:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-bg);}
+  .skill-preview{background:#1e1e1e;color:#d4d4d4;border-radius:8px;padding:1rem 1.25rem;font-family:var(--mono);font-size:11.5px;line-height:1.65;min-height:180px;white-space:pre-wrap;word-break:break-word;}
+  .skill-preview .y{color:#9cdcfe;}.skill-preview .v{color:#ce9178;}.skill-preview .c{color:#6a9955;}
+
+  /* Classify rows */
+  .classify-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+  .classify-task{flex:1.5;font-size:13.5px;color:var(--text-2);padding:8px 12px;background:var(--surface-2);border-radius:8px;}
+  .classify-select{flex:1;padding:8px 12px;border:.5px solid var(--border-strong);border-radius:8px;font-size:13px;font-family:inherit;color:var(--text);background:var(--surface);outline:none;}
+  .classify-select.correct{border-color:var(--success);background:var(--success-bg);color:var(--success);}
+  .classify-select.wrong{border-color:var(--danger);background:var(--danger-bg);color:var(--danger);}
+
+  /* Tag pills */
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500;margin-right:4px;}
+  .tag-green{background:var(--accent-bg);color:var(--accent-text);}
+  .tag-purple{background:var(--purple-bg);color:var(--purple-text);}
+  .tag-coral{background:#faece7;color:#993c1d;}
+  .tag-amber{background:#faeeda;color:#633806;}
+
+  /* Subagent diagram bubbles */
+  .agent-diagram{display:flex;flex-direction:column;align-items:center;gap:0;padding:1.25rem 0 .5rem;}
+  .agent-box{background:var(--surface);border:.5px solid var(--border-strong);border-radius:10px;padding:10px 18px;font-size:13px;font-weight:500;text-align:center;min-width:140px;}
+  .agent-box.orchestrator{background:var(--purple-bg);border-color:var(--purple-border);color:var(--purple-text);}
+  .agent-box.worker{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent-text);}
+  .agent-box.script{background:#faeeda;border-color:var(--warning-border);color:var(--warning-text);}
+  .agent-arrow{width:2px;height:22px;background:var(--border-strong);margin:0 auto;}
+  .agent-row{display:flex;gap:12px;justify-content:center;}
+  .agent-col{display:flex;flex-direction:column;align-items:center;}
+  .agent-line{width:100%;height:2px;background:var(--border-strong);margin:0;}
+
+  /* Det script compare */
+  .det-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:1rem 0;}
+
+  /* Checklist */
+  .checklist-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:.5px solid var(--border);font-size:14px;color:var(--text-2);}
+  .checklist-item:last-child{border:none;}
+  .checklist-item input[type=checkbox]{margin-top:3px;accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;}
+  .checklist-item.done{text-decoration:line-through;color:var(--text-3);}
+
+  @media(max-width:700px){.sidebar{display:none;}.main{padding:1.5rem 1.25rem;}.det-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="app">
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="label">Week 2 · Prelab</div>
+    <h2>Agent Design Patterns</h2>
+  </div>
+  <div class="nav-section-label">Foundations</div>
+  <div class="nav-item active" data-section="0"><span class="dot"></span>Modularity — the big idea</div>
+  <div class="nav-item" data-section="1"><span class="dot"></span>Subagents in depth</div>
+  <div class="nav-item" data-section="2"><span class="dot"></span>Workflow patterns</div>
+  <div class="nav-section-label">Design Patterns</div>
+  <div class="nav-item" data-section="3"><span class="dot"></span>Delegation & subagents</div>
+  <div class="nav-item" data-section="4"><span class="dot"></span>Loop patterns</div>
+  <div class="nav-item" data-section="5"><span class="dot"></span>Deterministic scripts</div>
+  <div class="nav-item" data-section="6"><span class="dot"></span>Chaining skills</div>
+  <div class="nav-section-label">Activities</div>
+  <div class="nav-item" data-section="7"><span class="dot"></span>Activity 1: Trip planner</div>
+  <div class="nav-item" data-section="8"><span class="dot"></span>Activity 2: Add a loop</div>
+  <div class="nav-item" data-section="9"><span class="dot"></span>Activity 3: Det. script</div>
+  <div class="nav-item" data-section="10"><span class="dot"></span>Activity 4: Chain skills</div>
+  <div class="nav-item" data-section="11"><span class="dot"></span>Reflection</div>
+</nav>
+
+<main class="main">
+
+<!-- 0: Modularity -->
+<div class="section active" id="s0">
+  <div class="section-tag">Foundations · 1 of 3</div>
+  <h1>Modularity — the big idea</h1>
+  <p class="subtitle">Everything in this prelab flows from one principle: break a complex task into the smallest possible specialized units, then wire them together.</p>
+
+  <div class="callout callout-colab">
+    <strong>This prelab has a companion Colab</strong>
+    Read and do the activities here first — concepts, design, and written exercises. Then open the Colab to run actual code, test your skills with a real model, and see the patterns in action. They're designed to be used together.
+  </div>
+
+  <h2>Why one big agent breaks down</h2>
+  <p>A single agent handling a large task has four compounding problems. Each one gets worse as the task grows.</p>
+  <div class="card-grid">
+    <div class="card-sm" style="border-top:3px solid var(--coral);">
+      <h4>Context overload</h4>
+      <p>Every step adds tokens. Long tasks push earlier context out of the window — the agent "forgets" what it decided three steps ago.</p>
+    </div>
+    <div class="card-sm" style="border-top:3px solid var(--coral);">
+      <h4>No specialization</h4>
+      <p>A prompt that does ten things is worse at each one than a prompt written just for that thing. Generalist prompts average down.</p>
+    </div>
+    <div class="card-sm" style="border-top:3px solid var(--coral);">
+      <h4>Hard to debug</h4>
+      <p>When the output is wrong, which step failed? A monolithic agent gives you no answer. Modular agents give you a traceable step.</p>
+    </div>
+    <div class="card-sm" style="border-top:3px solid var(--coral);">
+      <h4>No parallelism</h4>
+      <p>Independent subtasks run sequentially. You pay the latency of every step even when several could run at the same time.</p>
+    </div>
+  </div>
+
+  <h2>The modularity solution</h2>
+  <p>Decompose the task into <strong>the smallest possible specialized units</strong> — each with one job, one context, one output contract. Then wire them together using the four techniques you'll learn in this prelab.</p>
+
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+      <thead><tr style="background:var(--surface-2);"><th style="padding:10px 16px;text-align:left;font-weight:500;">Technique</th><th style="padding:10px 16px;text-align:left;font-weight:500;">What it does</th><th style="padding:10px 16px;text-align:left;font-weight:500;">Main benefit</th></tr></thead>
+      <tbody>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;font-weight:500;color:var(--accent-text);">Delegation</td><td style="padding:10px 16px;color:var(--text-2);">Spawn subagents from a skill's instructions</td><td style="padding:10px 16px;color:var(--text-2);">Isolated context per subtask</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;font-weight:500;color:var(--purple-text);">Looping</td><td style="padding:10px 16px;color:var(--text-2);">Iterate until quality threshold is met</td><td style="padding:10px 16px;color:var(--text-2);">Self-correcting output</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;font-weight:500;color:#633806;">Det. scripts</td><td style="padding:10px 16px;color:var(--text-2);">Replace LLM calls with deterministic code</td><td style="padding:10px 16px;color:var(--text-2);">Accuracy + lower latency</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;font-weight:500;color:var(--coral);">Chaining</td><td style="padding:10px 16px;color:var(--text-2);">Skills call other skills at the end</td><td style="padding:10px 16px;color:var(--text-2);">Composable pipelines</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-warn">
+    <strong>The latency tradeoff</strong>
+    Modularity has a cost: more agents means more round-trips. A sequential chain of five subagents takes five times the latency of one agent. Design for parallelism where you can, and only split what genuinely benefits from isolation.
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q0"></div>
+  <div class="nav-buttons"><button class="btn btn-primary" id="next-0" onclick="goTo(1)">Next: Subagents →</button></div>
+</div>
+
+<!-- 1: Subagents in depth -->
+<div class="section" id="s1">
+  <div class="section-tag">Foundations · 2 of 3</div>
+  <h1>Subagents in depth</h1>
+  <p class="subtitle">A subagent is an agent running in its own isolated context. It knows nothing about what came before — only what it was given in this call.</p>
+
+  <h2>What makes a subagent different</h2>
+  <div class="card-grid">
+    <div class="card-sm" style="border-top:3px solid var(--accent);">
+      <h4>Isolated context</h4>
+      <p>Each subagent gets a fresh context window. No bleed from earlier steps — and no risk of earlier errors compounding.</p>
+    </div>
+    <div class="card-sm" style="border-top:3px solid var(--accent);">
+      <h4>Skill-loaded</h4>
+      <p>A subagent can have its own skill loaded — a focused set of instructions written specifically for its one job.</p>
+    </div>
+    <div class="card-sm" style="border-top:3px solid var(--accent);">
+      <h4>Spawned by instructions</h4>
+      <p>The parent skill's instructions tell Claude to spawn a subagent and what to pass it. This is what we're building in this prelab.</p>
+    </div>
+  </div>
+
+  <h2>How spawning works</h2>
+  <p>When a skill's instructions say "spawn a subagent for X," Claude creates a new isolated agent call, passes it a specific input, and waits for the structured result. The parent then uses that result to continue.</p>
+
+  <div class="agent-diagram">
+    <div class="agent-box orchestrator">Parent skill (orchestrator)<br><span style="font-size:11px;font-weight:400;opacity:.8;">reads instructions, decides to delegate</span></div>
+    <div class="agent-arrow"></div>
+    <div style="display:flex;gap:24px;justify-content:center;align-items:flex-start;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+        <div class="agent-arrow" style="height:16px;"></div>
+        <div class="agent-box worker">Subagent A<br><span style="font-size:11px;font-weight:400;opacity:.8;">specialized task</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+        <div class="agent-arrow" style="height:16px;"></div>
+        <div class="agent-box worker">Subagent B<br><span style="font-size:11px;font-weight:400;opacity:.8;">specialized task</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+        <div class="agent-arrow" style="height:16px;"></div>
+        <div class="agent-box worker">Subagent C<br><span style="font-size:11px;font-weight:400;opacity:.8;">specialized task</span></div>
+      </div>
+    </div>
+    <div class="agent-arrow"></div>
+    <div class="agent-box orchestrator">Parent assembles results<br><span style="font-size:11px;font-weight:400;opacity:.8;">combines outputs into final answer</span></div>
+  </div>
+
+  <h2>What goes in a subagent skill</h2>
+  <p>A subagent's skill is written the same way as any skill — but with much tighter constraints, since it has a very narrow job and the parent needs to parse its output reliably.</p>
+
+  <pre style="font-size:12px;"><span class="c">---</span>
+<span class="n">name</span>: finding-hotels
+<span class="n">description</span>: &gt;
+  Finds hotel options for a given city and date range. Use when
+  a trip-planning orchestrator needs accommodation options.
+<span class="c">---</span>
+
+<span class="k">## Instructions</span>
+
+You receive a city name and travel dates. Return exactly 3 hotel options.
+
+Output format — always use exactly this structure:
+<span class="s">**Option 1:** [Name] — [price/night] — [one sentence on why it fits]
+**Option 2:** [Name] — [price/night] — [one sentence on why it fits]
+**Option 3:** [Name] — [price/night] — [one sentence on why it fits]</span>
+
+Do not add commentary, preambles, or caveats. Three options only.</pre>
+
+  <div class="callout callout-info">
+    <strong>Design rule: one job, one output contract</strong>
+    A subagent should do exactly one thing and return a predictable, parseable result. If the parent skill can't reliably extract the subagent's output and pass it to the next step, the whole pipeline breaks.
+  </div>
+
+  <h2>Required reading</h2>
+  <p class="section-hint">Open each link first — the checkbox won't tick until you've opened it.</p>
+  <div class="read-check" id="rc1a" onclick="toggleRead('rc1a')">
+    <div class="box" id="rc1a-box">✓</div>
+    <div><div style="font-weight:500;font-size:14px;">Claude Subagents — Platform Docs</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: how subagents are spawned, isolated context, input/output contracts</div></div>
+    <a href="https://platform.claude.com/docs/en/agent-sdk/subagents" target="_blank" style="margin-left:auto;font-size:12px;color:var(--accent-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation();markOpened('rc1a')">Open ↗</a>
+  </div>
+  <div class="read-check" id="rc1b" onclick="toggleRead('rc1b')">
+    <div class="box" id="rc1b-box">✓</div>
+    <div><div style="font-weight:500;font-size:14px;">Multi-Agent Patterns — OpenAI Agents Python</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: how multi-agent handoffs work in practice; translates to any agent framework</div></div>
+    <a href="https://openai.github.io/openai-agents-python/multi_agent/" target="_blank" style="margin-left:auto;font-size:12px;color:var(--accent-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation();markOpened('rc1b')">Open ↗</a>
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q1"></div>
+  <div class="nav-buttons"><button class="btn" onclick="goTo(0)">← Back</button><button class="btn btn-primary" id="next-1" onclick="goTo(2)">Next: Workflow patterns →</button></div>
+</div>
+
+<!-- 2: Workflow patterns -->
+<div class="section" id="s2">
+  <div class="section-tag">Foundations · 3 of 3</div>
+  <h1>Workflow patterns</h1>
+  <p class="subtitle">Five patterns cover the vast majority of multi-agent systems. You'll use several of them together in the activities. Click each to expand.</p>
+
+  <div class="pattern-card" id="pat0" onclick="togglePattern(0)">
+    <div class="pattern-header"><div class="pattern-icon" style="background:#e1f5ee;color:#085041;">A→C</div><div><h4>Sequential</h4><p>Steps run in order — output of each feeds the next</p></div><div class="pattern-chevron">▼</div></div>
+    <div class="pattern-body">
+      <p style="font-size:14px;">Each subagent runs one after another. Simple, predictable, easy to debug. Use when each step genuinely depends on the previous result.</p>
+      <div class="diagram-wrap"><svg viewBox="0 0 480 70" width="440" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="15" width="100" height="36" rx="7" fill="#e1f5ee" stroke="#9fe1cb" stroke-width="1"/><text x="60" y="37" text-anchor="middle" font-size="11" fill="#085041" font-weight="500">Fetch data</text><line x1="110" y1="33" x2="138" y2="33" stroke="#9fe1cb" stroke-width="1.5" marker-end="url(#ag)"/><rect x="140" y="15" width="100" height="36" rx="7" fill="#e1f5ee" stroke="#9fe1cb" stroke-width="1"/><text x="190" y="37" text-anchor="middle" font-size="11" fill="#085041" font-weight="500">Summarize</text><line x1="240" y1="33" x2="268" y2="33" stroke="#9fe1cb" stroke-width="1.5" marker-end="url(#ag)"/><rect x="270" y="15" width="100" height="36" rx="7" fill="#e1f5ee" stroke="#9fe1cb" stroke-width="1"/><text x="320" y="37" text-anchor="middle" font-size="11" fill="#085041" font-weight="500">Format</text><line x1="370" y1="33" x2="398" y2="33" stroke="#9fe1cb" stroke-width="1.5" marker-end="url(#ag)"/><rect x="400" y="20" width="65" height="26" rx="6" fill="#f1efe8" stroke="#d3d1c7" stroke-width="1"/><text x="433" y="37" text-anchor="middle" font-size="11" fill="#555550">Result</text><defs><marker id="ag" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#9fe1cb"/></marker></defs></svg></div>
+      <p style="font-size:13.5px;color:var(--text-2);"><strong>Watch out for:</strong> One failed step blocks everything downstream. Handle errors at each step.</p>
+    </div>
+  </div>
+
+  <div class="pattern-card" id="pat1" onclick="togglePattern(1)">
+    <div class="pattern-header"><div class="pattern-icon" style="background:#eeedfe;color:#3c3489;">//</div><div><h4>Parallel</h4><p>Independent subagents run at the same time, results merged</p></div><div class="pattern-chevron">▼</div></div>
+    <div class="pattern-body">
+      <p style="font-size:14px;">Fan out to multiple subagents simultaneously when their inputs don't depend on each other. Merge results when all complete. Saves significant latency.</p>
+      <div class="diagram-wrap"><svg viewBox="0 0 460 130" width="420" xmlns="http://www.w3.org/2000/svg"><rect x="160" y="8" width="130" height="36" rx="7" fill="#eeedfe" stroke="#afa9ec" stroke-width="1"/><text x="225" y="30" text-anchor="middle" font-size="11" fill="#3c3489" font-weight="500">Orchestrator</text><line x1="190" y1="44" x2="90" y2="78" stroke="#afa9ec" stroke-width="1.5" marker-end="url(#ap2)"/><line x1="225" y1="44" x2="225" y2="78" stroke="#afa9ec" stroke-width="1.5" marker-end="url(#ap2)"/><line x1="260" y1="44" x2="360" y2="78" stroke="#afa9ec" stroke-width="1.5" marker-end="url(#ap2)"/><rect x="30" y="78" width="110" height="34" rx="7" fill="#e1f5ee" stroke="#9fe1cb" stroke-width="1"/><text x="85" y="99" text-anchor="middle" font-size="11" fill="#085041">Subagent A</text><rect x="168" y="78" width="110" height="34" rx="7" fill="#e1f5ee" stroke="#9fe1cb" stroke-width="1"/><text x="223" y="99" text-anchor="middle" font-size="11" fill="#085041">Subagent B</text><rect x="306" y="78" width="110" height="34" rx="7" fill="#e1f5ee" stroke="#9fe1cb" stroke-width="1"/><text x="361" y="99" text-anchor="middle" font-size="11" fill="#085041">Subagent C</text><defs><marker id="ap2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#afa9ec"/></marker></defs></svg></div>
+      <p style="font-size:13.5px;color:var(--text-2);"><strong>Watch out for:</strong> The slowest subagent determines total latency. Set timeouts and handle partial failures.</p>
+    </div>
+  </div>
+
+  <div class="pattern-card" id="pat2" onclick="togglePattern(2)">
+    <div class="pattern-header"><div class="pattern-icon" style="background:#faeeda;color:#633806;">↺</div><div><h4>Verification loop</h4><p>Agent checks its own output, retries if it fails</p></div><div class="pattern-chevron">▼</div></div>
+    <div class="pattern-body">
+      <p style="font-size:14px;">The agent generates output, runs a check (either itself or a subagent), and if it fails, retries with the feedback. Stops when it passes or hits a max retry limit.</p>
+      <div class="diagram-wrap"><svg viewBox="0 0 440 115" width="400" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="38" width="110" height="36" rx="7" fill="#faeeda" stroke="#fac775" stroke-width="1"/><text x="65" y="60" text-anchor="middle" font-size="11" fill="#633806" font-weight="500">Generate</text><line x1="120" y1="56" x2="148" y2="56" stroke="#fac775" stroke-width="1.5" marker-end="url(#aa)"/><rect x="150" y="38" width="110" height="36" rx="7" fill="#faeeda" stroke="#fac775" stroke-width="1"/><text x="205" y="60" text-anchor="middle" font-size="11" fill="#633806" font-weight="500">Check</text><line x1="260" y1="56" x2="288" y2="56" stroke="#9fe1cb" stroke-width="1.5" marker-end="url(#ag2)"/><text x="274" y="48" text-anchor="middle" font-size="9" fill="#0f6e56">pass</text><rect x="290" y="38" width="80" height="36" rx="7" fill="#e1f5ee" stroke="#9fe1cb" stroke-width="1"/><text x="330" y="60" text-anchor="middle" font-size="11" fill="#085041">Done ✓</text><path d="M205 74 Q205 100 65 100 Q65 74 65 74" fill="none" stroke="#f09595" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ar)"/><text x="135" y="112" text-anchor="middle" font-size="9" fill="#993c1d">fail — retry with feedback</text><defs><marker id="aa" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#fac775"/></marker><marker id="ag2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#9fe1cb"/></marker><marker id="ar" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#f09595"/></marker></defs></svg></div>
+      <p style="font-size:13.5px;color:var(--text-2);"><strong>Always cap retries.</strong> Define a max (e.g. 3) and a fallback for when it never passes.</p>
+    </div>
+  </div>
+
+  <div class="pattern-card" id="pat3" onclick="togglePattern(3)">
+    <div class="pattern-header"><div class="pattern-icon" style="background:#faece7;color:#993c1d;">if</div><div><h4>Routing</h4><p>A classifier decides which specialist to send work to</p></div><div class="pattern-chevron">▼</div></div>
+    <div class="pattern-body">
+      <p style="font-size:14px;">A router reads the input and sends it to the right specialist agent. Use when different inputs need fundamentally different handling — different tools, different expertise, different output formats.</p>
+      <p style="font-size:13.5px;color:var(--text-2);"><strong>Watch out for:</strong> The router's accuracy is critical — a misclassification sends work to the wrong agent entirely. Test the router separately before relying on it in a pipeline.</p>
+    </div>
+  </div>
+
+  <div class="pattern-card" id="pat4" onclick="togglePattern(4)">
+    <div class="pattern-header"><div class="pattern-icon" style="background:#eeedfe;color:#3c3489;">E→O</div><div><h4>Evaluator–optimizer</h4><p>Evaluator subagent judges output, main agent improves it</p></div><div class="pattern-chevron">▼</div></div>
+    <div class="pattern-body">
+      <p style="font-size:14px;">A specialization of the verification loop: the checker is a dedicated evaluator subagent with its own rubric, rather than the main agent checking its own work. Separation of concerns produces better feedback.</p>
+      <div class="card" style="margin-top:.75rem;font-size:13.5px;color:var(--text-2);">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;gap:10px;align-items:flex-start;"><div style="min-width:22px;height:22px;border-radius:50%;background:var(--accent);color:white;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div><div><strong>Main agent</strong> generates output.</div></div>
+          <div style="display:flex;gap:10px;align-items:flex-start;"><div style="min-width:22px;height:22px;border-radius:50%;background:var(--accent);color:white;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div><div><strong>Evaluator subagent</strong> scores it against a rubric — pass/fail + specific improvement notes.</div></div>
+          <div style="display:flex;gap:10px;align-items:flex-start;"><div style="min-width:22px;height:22px;border-radius:50%;background:var(--accent);color:white;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div><div><strong>Main agent</strong> re-generates using the evaluator's feedback. Loop until pass or max retries.</div></div>
+        </div>
+      </div>
+      <p style="font-size:13.5px;color:var(--text-2);margin-top:.5rem;"><strong>Why a separate evaluator?</strong> The main agent is bad at critiquing its own output — it rationalizes rather than identifies flaws. A separate agent with a different prompt is more objective.</p>
+    </div>
+  </div>
+
+  <div class="callout callout-tip" style="margin-top:1.5rem;">
+    <strong>Patterns combine</strong>
+    Real systems mix these. A trip planner might use parallel (flights, hotels, itinerary at once) inside an orchestrator-worker structure, with a verification loop on the itinerary subagent. You pick per step, not per system.
+  </div>
+
+  <h2>Required reading</h2>
+  <p class="section-hint">Open the link first — the checkbox won't tick until you've opened it.</p>
+  <div class="read-check" id="rc2a" onclick="toggleRead('rc2a')">
+    <div class="box" id="rc2a-box">✓</div>
+    <div><div style="font-weight:500;font-size:14px;">Building Effective Agents — Anthropic</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: workflow patterns, when to use each, the evaluator-optimizer pattern in depth</div></div>
+    <a href="https://anthropic.com/research/building-effective-agents" target="_blank" style="margin-left:auto;font-size:12px;color:var(--accent-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation();markOpened('rc2a')">Open ↗</a>
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q2"></div>
+  <div class="nav-buttons"><button class="btn" onclick="goTo(1)">← Back</button><button class="btn btn-primary" id="next-2" onclick="goTo(3)">Next: Delegation →</button></div>
+</div>
+
+<!-- 3: Delegation & subagents -->
+<div class="section" id="s3">
+  <div class="section-tag">Design Patterns · 1 of 4</div>
+  <h1>Delegation & subagents</h1>
+  <p class="subtitle">How to write a skill that spawns subagents — what goes in the instructions, how to pass inputs, and how to collect results.</p>
+
+  <h2>Writing the orchestrator skill</h2>
+  <p>The parent skill's instructions do three things: describe the overall goal, specify what to delegate and to which subagent, and define how to assemble the final answer from their results.</p>
+
+  <pre style="font-size:12px;"><span class="c">---</span>
+<span class="n">name</span>: planning-trip
+<span class="n">description</span>: &gt;
+  Plans a complete trip with flights, hotels, and a daily itinerary.
+  Use when a user provides a destination, travel dates, and budget.
+<span class="c">---</span>
+
+<span class="k">## Instructions</span>
+
+You are a trip planning coordinator. Given a destination, dates, and budget:
+
+1. Spawn the <span class="s">finding-flights</span> subagent with: destination, dates, budget.
+2. Spawn the <span class="s">finding-hotels</span> subagent with: destination, dates, budget.
+3. Spawn the <span class="s">building-itinerary</span> subagent with: destination, dates.
+4. Assemble all three outputs into a single trip plan using this format:
+
+<span class="s">## ✈ Flights
+[flights subagent output]
+
+## 🏨 Hotels
+[hotels subagent output]
+
+## 📅 Itinerary
+[itinerary subagent output]</span>
+
+Run steps 1–3 in parallel when possible to reduce total time.</pre>
+
+  <h2>Each subagent gets one job</h2>
+  <p>Notice that each subagent skill is narrow — it receives a structured input and returns a structured output. The orchestrator never asks a subagent to "plan the whole trip" — it only asks it to handle one well-defined piece.</p>
+
+  <div class="card-grid" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="card-sm" style="border-top:3px solid var(--accent);">
+      <span class="tag tag-green">finding-flights</span>
+      <p style="font-size:13px;margin-top:8px;">Input: destination, dates, budget.<br>Output: 3 flight options with price and airline.</p>
+    </div>
+    <div class="card-sm" style="border-top:3px solid var(--accent);">
+      <span class="tag tag-green">finding-hotels</span>
+      <p style="font-size:13px;margin-top:8px;">Input: destination, dates, budget.<br>Output: 3 hotel options with price and rating.</p>
+    </div>
+    <div class="card-sm" style="border-top:3px solid var(--accent);">
+      <span class="tag tag-green">building-itinerary</span>
+      <p style="font-size:13px;margin-top:8px;">Input: destination, dates.<br>Output: day-by-day activity plan.</p>
+    </div>
+  </div>
+
+  <div class="callout callout-warn">
+    <strong>The context isolation rule</strong>
+    Subagents have no memory of each other and no access to the parent's context. If the <code>finding-hotels</code> subagent needs to know the budget, the orchestrator must pass it explicitly in the call — it cannot "just know."
+  </div>
+
+  <h2>How many subagents is too many?</h2>
+  <p>Each subagent adds latency (if sequential) or complexity (if parallel). A good rule: split when the subtask genuinely needs different expertise, different tools, or needs to run in isolation. Don't split just for the sake of it.</p>
+
+  <h2>Quick check</h2>
+  <div id="q3"></div>
+  <div class="nav-buttons"><button class="btn" onclick="goTo(2)">← Back</button><button class="btn btn-primary" id="next-3" onclick="goTo(4)">Next: Loop patterns →</button></div>
+</div>
+
+<!-- 4: Loop patterns -->
+<div class="section" id="s4">
+  <div class="section-tag">Design Patterns · 2 of 4</div>
+  <h1>Loop patterns</h1>
+  <p class="subtitle">Loops are how agents improve their own output. The key design decisions are: what triggers a retry, who does the checking, and when do you stop?</p>
+
+  <h2>Three types of loops</h2>
+  <div class="card-grid" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="card-sm" style="border-top:3px solid var(--accent);">
+      <span class="tag tag-green">Fixed</span>
+      <h4 style="margin-top:8px;">Run N times</h4>
+      <p>Repeat a fixed number of times, keep the best result. No evaluator needed. Use for diversity, not quality.</p>
+    </div>
+    <div class="card-sm" style="border-top:3px solid var(--purple);">
+      <span class="tag tag-purple">Conditional</span>
+      <h4 style="margin-top:8px;">Run until rule met</h4>
+      <p>Stop when a deterministic condition passes — word count, format check, schema validation. Exit is objective.</p>
+    </div>
+    <div class="card-sm" style="border-top:3px solid var(--coral);">
+      <span class="tag tag-coral">Evaluator</span>
+      <h4 style="margin-top:8px;">Run until quality passes</h4>
+      <p>A judge (the agent itself or a subagent) scores the output. Exit depends on a quality judgment, not a rule.</p>
+    </div>
+  </div>
+
+  <h2>Verification loop — in a skill</h2>
+  <p>Adding a verification loop to a skill means instructing Claude to check its own output before finalizing it. The check can be a rule ("is this under 100 words?") or a judgment ("does this cover all the points the user asked for?").</p>
+
+  <pre style="font-size:12px;"><span class="k">## Instructions</span>
+
+1. Generate a day-by-day itinerary for the destination and dates.
+2. Check your itinerary against these criteria:
+   - Every day has at least 2 activities
+   - No day has more than 4 activities (realistic pacing)
+   - Each activity has an estimated duration
+3. If any criterion fails, revise the itinerary and check again.
+4. Repeat until all criteria pass, or until you have tried 3 times.
+5. Output your best attempt even if it doesn't fully pass at 3 tries.</pre>
+
+  <div class="callout callout-tip">
+    <strong>Self-checking vs. subagent checking</strong>
+    A self-check (the same agent verifies its own work) is simpler but less reliable — the agent rationalizes its mistakes. A subagent evaluator with a separate prompt is more objective. Use self-checks for mechanical criteria (word counts, field presence); use subagent evaluators for quality judgments.
+  </div>
+
+  <h2>Required reading</h2>
+  <p class="section-hint">Open the link first — the checkbox won't tick until you've opened it.</p>
+  <div class="read-check" id="rc4a" onclick="toggleRead('rc4a')">
+    <div class="box" id="rc4a-box">✓</div>
+    <div><div style="font-weight:500;font-size:14px;">Getting Started with Loops — Claude Blog</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: loop types, stopping conditions, max-retry patterns</div></div>
+    <a href="https://claude.com/blog/getting-started-with-loops" target="_blank" style="margin-left:auto;font-size:12px;color:var(--accent-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation();markOpened('rc4a')">Open ↗</a>
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q4"></div>
+  <div class="nav-buttons"><button class="btn" onclick="goTo(3)">← Back</button><button class="btn btn-primary" id="next-4" onclick="goTo(5)">Next: Deterministic scripts →</button></div>
+</div>
+
+<!-- 5: Deterministic scripts -->
+<div class="section" id="s5">
+  <div class="section-tag">Design Patterns · 3 of 4</div>
+  <h1>Deterministic scripts</h1>
+  <p class="subtitle">Not everything should be left to the LLM. If there is exactly one correct answer, write a script — it's faster, cheaper, and always right.</p>
+
+  <h2>What makes something deterministic?</h2>
+  <p>A task is deterministic if: given the same input, you always get the same output, and a human could write a unit test for it. Anything else involves judgment and belongs in the LLM.</p>
+
+  <div class="det-grid">
+    <div class="card-sm" style="border-top:3px solid var(--danger);">
+      <span class="tag tag-coral">Leave to the LLM</span>
+      <ul style="font-size:13px;margin-top:8px;padding-left:1.2rem;">
+        <li>Classifying, summarizing, deciding</li>
+        <li>Writing or rewriting content</li>
+        <li>Judging quality or tone</li>
+        <li>Reasoning about nuance or context</li>
+      </ul>
+    </div>
+    <div class="card-sm" style="border-top:3px solid var(--accent);">
+      <span class="tag tag-green">Write a script for</span>
+      <ul style="font-size:13px;margin-top:8px;padding-left:1.2rem;">
+        <li>Counting words, characters, items</li>
+        <li>Validating format (email, date, JSON)</li>
+        <li>Math calculations</li>
+        <li>API calls, database queries</li>
+        <li>Sorting, filtering, transforming data</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Why it matters</h2>
+  <div class="card-grid" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="card-sm">
+      <h4>Accuracy</h4>
+      <p>An LLM might miscount, round, or hallucinate a value. A script is always exact.</p>
+    </div>
+    <div class="card-sm">
+      <h4>Latency</h4>
+      <p>A Python function runs in milliseconds. An LLM call takes seconds and adds tokens.</p>
+    </div>
+    <div class="card-sm">
+      <h4>Debuggability</h4>
+      <p>A failing script throws an error. A failing LLM call gives you a plausible-sounding wrong answer.</p>
+    </div>
+  </div>
+
+  <h2>How to reference a script in a skill</h2>
+  <p>You don't paste script code into the skill. You give the path and tell Claude exactly which function to call and what it returns.</p>
+
+  <pre style="font-size:12px;"><span class="k">## Instructions</span>
+
+To count the number of words in a text:
+Run: <span class="s">python scripts/count_words.py "[text]"</span>
+Returns: an integer (the word count).
+
+Use this count before deciding whether the summary needs trimming.
+Do NOT estimate or count manually — always use the script.</pre>
+
+  <div class="callout callout-info">
+    <strong>The golden rule</strong>
+    If you would write a unit test for it, write a script. If you can't write a unit test for it, use the LLM.
+  </div>
+
+  <h2>Required reading</h2>
+  <p class="section-hint">Open the link first — the checkbox won't tick until you've opened it.</p>
+  <div class="read-check" id="rc5a" onclick="toggleRead('rc5a')">
+    <div class="box" id="rc5a-box">✓</div>
+    <div><div style="font-weight:500;font-size:14px;">Agent Skills Overview — Claude Platform</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: the scripts section — how skills reference and execute deterministic scripts</div></div>
+    <a href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview" target="_blank" style="margin-left:auto;font-size:12px;color:var(--accent-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation();markOpened('rc5a')">Open ↗</a>
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q5"></div>
+  <div class="nav-buttons"><button class="btn" onclick="goTo(4)">← Back</button><button class="btn btn-primary" id="next-5" onclick="goTo(6)">Next: Chaining skills →</button></div>
+</div>
+
+<!-- 6: Chaining skills -->
+<div class="section" id="s6">
+  <div class="section-tag">Design Patterns · 4 of 4</div>
+  <h1>Chaining skills</h1>
+  <p class="subtitle">Skills can call other skills at the end of their procedure — making each skill a specialized step in a larger pipeline.</p>
+
+  <h2>Skills calling skills</h2>
+  <p>When a skill finishes its job, it can hand off to the next skill rather than returning to the user. This keeps each skill narrow and composable — the chain handles the full workflow.</p>
+
+  <div class="agent-diagram" style="padding:.75rem 0;">
+    <div style="display:flex;align-items:center;gap:0;overflow-x:auto;padding:.5rem 0;">
+      <div class="agent-box" style="border-top:3px solid var(--purple);min-width:130px;">planning-trip<br><span style="font-size:11px;opacity:.7;">orchestrates</span></div>
+      <div style="width:32px;height:2px;background:var(--border-strong);flex-shrink:0;"></div>
+      <div style="font-size:11px;color:var(--text-3);margin-right:4px;">calls</div>
+      <div class="agent-box worker" style="min-width:130px;">finding-flights<br><span style="font-size:11px;opacity:.7;">returns options</span></div>
+      <div style="width:32px;height:2px;background:var(--border-strong);flex-shrink:0;"></div>
+      <div style="font-size:11px;color:var(--text-3);margin-right:4px;">chains to</div>
+      <div class="agent-box worker" style="min-width:130px;">verifying-budget<br><span style="font-size:11px;opacity:.7;">checks cost</span></div>
+      <div style="width:32px;height:2px;background:var(--border-strong);flex-shrink:0;"></div>
+      <div style="font-size:11px;color:var(--text-3);margin-right:4px;">chains to</div>
+      <div class="agent-box worker" style="min-width:130px;">formatting-output<br><span style="font-size:11px;opacity:.7;">presents result</span></div>
+    </div>
+  </div>
+
+  <h2>How to chain in a skill</h2>
+  <p>At the end of a skill's instructions, specify which skill to call next and what to pass it.</p>
+
+  <pre style="font-size:12px;"><span class="k">## Instructions</span>
+
+<span class="c"># (finding-flights skill)</span>
+1. Search for available flights matching the provided criteria.
+2. Return the top 3 options with price, airline, and duration.
+3. When complete, pass your results to the
+   <span class="s">verifying-budget</span> skill along with the user's original budget.
+   Format: "Flight options: [results]. User budget: [budget]"</pre>
+
+  <h2>Chaining vs. orchestrating</h2>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+      <thead><tr style="background:var(--surface-2);"><th style="padding:10px 16px;text-align:left;font-weight:500;"></th><th style="padding:10px 16px;text-align:left;font-weight:500;">Chaining</th><th style="padding:10px 16px;text-align:left;font-weight:500;">Orchestrating</th></tr></thead>
+      <tbody>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;color:var(--text-2);font-weight:500;">Who controls flow?</td><td style="padding:10px 16px;color:var(--text-2);">Each skill passes to the next</td><td style="padding:10px 16px;color:var(--text-2);">Central orchestrator decides</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;color:var(--text-2);font-weight:500;">Best for</td><td style="padding:10px 16px;color:var(--text-2);">Linear pipelines, each step specialised</td><td style="padding:10px 16px;color:var(--text-2);">Complex branching, parallel steps</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;color:var(--text-2);font-weight:500;">Error handling</td><td style="padding:10px 16px;color:var(--text-2);">Each skill handles its own</td><td style="padding:10px 16px;color:var(--text-2);">Orchestrator catches and reroutes</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-tip">
+    <strong>The main idea — modularity</strong>
+    Whether you delegate, loop, script, or chain: the goal is the same. Each unit does one thing well, can be tested independently, and can be swapped out without touching anything else. This is what makes agent systems maintainable at scale.
+  </div>
+
+  <h2>Required reading</h2>
+  <p class="section-hint">Open the link first — the checkbox won't tick until you've opened it.</p>
+  <div class="read-check" id="rc6a" onclick="toggleRead('rc6a')">
+    <div class="box" id="rc6a-box">✓</div>
+    <div><div style="font-weight:500;font-size:14px;">Building Verification Loops with Skills — Claude Blog</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: skill chaining patterns, verification loops built from chained skills</div></div>
+    <a href="https://claude.com/blog/building-verification-loops-in-claude-code-with-skills" target="_blank" style="margin-left:auto;font-size:12px;color:var(--accent-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation();markOpened('rc6a')">Open ↗</a>
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q6"></div>
+  <div class="nav-buttons"><button class="btn" onclick="goTo(5)">← Back</button><button class="btn btn-primary" id="next-6" onclick="goTo(7)">Activities →</button></div>
+</div>
+
+<!-- 7: Activity 1 — Trip planner -->
+<div class="section" id="s7">
+  <div class="section-tag">Activity 1 of 4</div>
+  <h1>Design a trip planning system</h1>
+  <p class="subtitle">Apply delegation by designing a trip planner with three subagents. You'll use this design in the Colab to build and run the actual skills.</p>
+
+  <div class="callout callout-colab">
+    <strong>Colab connection</strong>
+    Complete the design here first, then open the Colab — Cell 1 walks you through implementing exactly this system with real code.
+  </div>
+
+  <h3>Step 1 — Name your subagents</h3>
+  <p style="font-size:14px;color:var(--text-2);">Fill in a skill name (lowercase, hyphens) and one-sentence job description for each subagent.</p>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--accent-text);margin-bottom:8px;">Subagent 1 — Flights</div>
+    <div class="skill-field"><label>Skill name</label><input type="text" id="sa1-name" placeholder="finding-flights" oninput="updateA1Preview()"></div>
+    <div class="skill-field"><label>One-sentence job</label><input type="text" id="sa1-job" placeholder="Finds available flight options for a given destination and date range." oninput="updateA1Preview()"></div>
+    <div class="skill-field"><label>What it receives (inputs)</label><input type="text" id="sa1-in" placeholder="destination, travel dates, budget" oninput="updateA1Preview()"></div>
+    <div class="skill-field" style="margin-bottom:0;"><label>What it returns (output contract)</label><input type="text" id="sa1-out" placeholder="3 flight options with airline, price, and duration" oninput="updateA1Preview()"></div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--accent-text);margin-bottom:8px;">Subagent 2 — Hotels</div>
+    <div class="skill-field"><label>Skill name</label><input type="text" id="sa2-name" placeholder="finding-hotels" oninput="updateA1Preview()"></div>
+    <div class="skill-field"><label>One-sentence job</label><input type="text" id="sa2-job" placeholder="Finds hotel options for a given city, dates, and budget." oninput="updateA1Preview()"></div>
+    <div class="skill-field"><label>What it receives</label><input type="text" id="sa2-in" placeholder="destination, check-in/out dates, budget" oninput="updateA1Preview()"></div>
+    <div class="skill-field" style="margin-bottom:0;"><label>What it returns</label><input type="text" id="sa2-out" placeholder="3 hotel options with name, price per night, and rating" oninput="updateA1Preview()"></div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--accent-text);margin-bottom:8px;">Subagent 3 — Itinerary</div>
+    <div class="skill-field"><label>Skill name</label><input type="text" id="sa3-name" placeholder="building-itinerary" oninput="updateA1Preview()"></div>
+    <div class="skill-field"><label>One-sentence job</label><input type="text" id="sa3-job" placeholder="Creates a day-by-day activity itinerary for the destination." oninput="updateA1Preview()"></div>
+    <div class="skill-field"><label>What it receives</label><input type="text" id="sa3-in" placeholder="destination, travel dates" oninput="updateA1Preview()"></div>
+    <div class="skill-field" style="margin-bottom:0;"><label>What it returns</label><input type="text" id="sa3-out" placeholder="A day-by-day activity plan with 2–4 activities per day" oninput="updateA1Preview()"></div>
+  </div>
+
+  <h3 style="margin-top:1.5rem;">Step 2 — Write the orchestrator instructions</h3>
+  <p style="font-size:14px;color:var(--text-2);">Write the <code>## Instructions</code> section for the parent <code>planning-trip</code> skill. It should tell Claude which subagents to spawn, what to pass each one, whether they run in parallel or sequentially, and how to assemble the final output.</p>
+  <textarea id="a1-instr" placeholder="## Instructions&#10;&#10;You are a trip planning coordinator. Given a destination, travel dates, and budget:&#10;&#10;1. Spawn the [subagent-name] subagent with: ...&#10;2. ..." style="min-height:160px;"></textarea>
+
+  <h3 style="margin-top:1.5rem;">Live preview</h3>
+  <div class="skill-preview" id="a1-preview" style="font-size:11.5px;min-height:140px;">Fill in the fields above to see your orchestrator skill...</div>
+  <div id="a1-validation" style="margin-top:6px;font-size:12px;color:var(--danger);"></div>
+
+  <div style="margin-top:1rem;display:flex;gap:10px;align-items:center;">
+    <button class="btn btn-sm" onclick="checkA1()">Check my design</button>
+    <div id="a1-result" style="font-size:13px;"></div>
+  </div>
+
+  <div class="nav-buttons"><button class="btn" onclick="goTo(6)">← Back</button><button class="btn btn-primary" id="next-7" onclick="goTo(8)">Activity 2: Add a loop →</button></div>
+</div>
+
+<!-- 8: Activity 2 — Add a loop -->
+<div class="section" id="s8">
+  <div class="section-tag">Activity 2 of 4</div>
+  <h1>Add a verification loop</h1>
+  <p class="subtitle">Improve the itinerary subagent from Activity 1 by adding a loop so it checks its own output before returning.</p>
+
+  <div class="callout callout-colab">
+    <strong>Colab connection</strong>
+    After writing your loop instructions here, open the Colab — Cell 2 lets you run both versions (with and without the loop) and compare the outputs directly.
+  </div>
+
+  <h3>Choose your loop type</h3>
+  <p style="font-size:14px;color:var(--text-2);">Which loop type makes the most sense for an itinerary subagent? Select one and explain why.</p>
+
+  <div id="loop-choice" style="margin-bottom:1rem;">
+    <div class="quiz-option" id="lc0" onclick="selectLoop(0)"><div class="letter">A</div>Fixed loop — generate 3 itineraries and return all of them</div>
+    <div class="quiz-option" id="lc1" onclick="selectLoop(1)"><div class="letter">B</div>Conditional loop — keep regenerating until every day has at least 2 activities</div>
+    <div class="quiz-option" id="lc2" onclick="selectLoop(2)"><div class="letter">C</div>Evaluator loop — a subagent judge scores the itinerary and requests improvements</div>
+  </div>
+  <div id="loop-choice-fb" class="quiz-feedback"></div>
+
+  <h3 style="margin-top:1.5rem;">Write the improved itinerary instructions</h3>
+  <p style="font-size:14px;color:var(--text-2);">Rewrite the <code>## Instructions</code> for <code>building-itinerary</code> to include a verification loop. Be explicit about: what the check criteria are, what happens on failure, and what the max retry count is.</p>
+  <textarea id="a2-instr" placeholder="## Instructions&#10;&#10;You are an itinerary specialist. Given a destination and dates:&#10;&#10;1. Generate a day-by-day plan with 2–4 activities per day...&#10;2. Check your plan against these criteria:&#10;   - ...&#10;3. If any criterion fails, revise and check again...&#10;4. Stop when all criteria pass, or after [N] attempts." style="min-height:180px;"></textarea>
+
+  <div style="margin-top:1rem;display:flex;gap:10px;align-items:center;">
+    <button class="btn btn-sm" onclick="checkA2()">Check my loop</button>
+    <div id="a2-result" style="font-size:13px;"></div>
+  </div>
+
+  <div class="nav-buttons"><button class="btn" onclick="goTo(7)">← Back</button><button class="btn btn-primary" id="next-8" onclick="goTo(9)">Activity 3: Det. script →</button></div>
+</div>
+
+<!-- 9: Activity 3 — Deterministic script -->
+<div class="section" id="s9">
+  <div class="section-tag">Activity 3 of 4</div>
+  <h1>Build a deterministic script skill</h1>
+  <p class="subtitle">Practice the pattern of referencing a script in a skill — without relying on the LLM for something that has one right answer.</p>
+
+  <div class="callout callout-colab">
+    <strong>Colab connection</strong>
+    Cell 3 in the Colab has the actual Python scripts for you to run. You'll see the difference between asking the LLM to count vs. running the script directly.
+  </div>
+
+  <h3>Scenario: word count checker</h3>
+  <p style="font-size:14px;color:var(--text-2);">You're building a skill that summarizes articles and must keep summaries under 100 words. The word count check should be deterministic — not left to the LLM.</p>
+
+  <h3>Step 1 — Spot what should be a script</h3>
+  <p style="font-size:14px;color:var(--text-2);">Below is a naive skill. Which of the tasks inside should be extracted into a deterministic script? Select all that apply.</p>
+
+  <div id="det-check" style="margin-bottom:1rem;">
+    <div class="quiz-option" id="dc0" onclick="toggleDetCheck(0)" style="cursor:pointer;"><div class="letter" id="dc0-l">A</div>Write a two-sentence summary of the article</div>
+    <div class="quiz-option" id="dc1" onclick="toggleDetCheck(1)" style="cursor:pointer;"><div class="letter" id="dc1-l">B</div>Count the exact number of words in the summary</div>
+    <div class="quiz-option" id="dc2" onclick="toggleDetCheck(2)" style="cursor:pointer;"><div class="letter" id="dc2-l">C</div>Check whether the summary is under 100 words</div>
+    <div class="quiz-option" id="dc3" onclick="toggleDetCheck(3)" style="cursor:pointer;"><div class="letter" id="dc3-l">D</div>Decide if the summary captures the article's main point</div>
+  </div>
+  <button class="btn btn-sm" onclick="checkDetCheck()">Check my selections</button>
+  <div id="det-check-fb" class="quiz-feedback" style="margin-top:.75rem;"></div>
+
+  <h3 style="margin-top:1.5rem;">Step 2 — Write the skill with a script reference</h3>
+  <p style="font-size:14px;color:var(--text-2);">Write the <code>## Instructions</code> for a <code>summarizing-articles</code> skill. It should summarize the article, use a script to count the words, and loop until the summary is under 100 words.</p>
+  <textarea id="a3-instr" placeholder="## Instructions&#10;&#10;You are an article summarizer.&#10;&#10;1. Write a summary of the article...&#10;2. Count the words by running: python scripts/count_words.py &quot;[summary]&quot;&#10;3. If the count is over 100, shorten the summary and count again.&#10;4. Return the final summary when it is under 100 words." style="min-height:160px;"></textarea>
+
+  <div style="margin-top:1rem;display:flex;gap:10px;align-items:center;">
+    <button class="btn btn-sm" onclick="checkA3()">Check my skill</button>
+    <div id="a3-result" style="font-size:13px;"></div>
+  </div>
+
+  <div class="nav-buttons"><button class="btn" onclick="goTo(8)">← Back</button><button class="btn btn-primary" id="next-9" onclick="goTo(10)">Activity 4: Chain skills →</button></div>
+</div>
+
+<!-- 10: Activity 4 — Chain skills -->
+<div class="section" id="s10">
+  <div class="section-tag">Activity 4 of 4</div>
+  <h1>Chain the trip planner into a pipeline</h1>
+  <p class="subtitle">Decompose the monolithic <code>planning-trip</code> orchestrator into a chain of skills — each handing off to the next.</p>
+
+  <div class="callout callout-colab">
+    <strong>Colab connection</strong>
+    Cell 4 in the Colab lets you run the chained version of the trip planner and trace the full call sequence end to end.
+  </div>
+
+  <h3>Step 1 — Design the chain</h3>
+  <p style="font-size:14px;color:var(--text-2);">Below are four skills in a trip planning chain. Drag them into the correct order — which skill should call which next?</p>
+
+  <ul class="chain-list" id="chain-sortable">
+    <li class="chain-item" draggable="true" data-order="3"><span class="grip">⠿</span><span class="tag tag-green">formatting-trip-plan</span> Takes all results and formats the final output for the user</li>
+    <li class="chain-item" draggable="true" data-order="1"><span class="grip">⠿</span><span class="tag tag-purple">planning-trip</span> Entry point — receives user request, delegates to specialists</li>
+    <li class="chain-item" draggable="true" data-order="4"><span class="grip">⠿</span><span class="tag tag-coral">verifying-budget</span> Checks total trip cost against the user's budget, flags if over</li>
+    <li class="chain-item" draggable="true" data-order="2"><span class="grip">⠿</span><span class="tag tag-amber">gathering-options</span> Calls flight, hotel, and itinerary subagents in parallel</li>
+  </ul>
+  <button class="btn btn-sm" style="margin-top:8px;" onclick="checkChainOrder()">Check order</button>
+  <div id="chain-order-result" style="display:none;margin-top:8px;font-size:13.5px;"></div>
+
+  <h3 style="margin-top:1.5rem;">Step 2 — Write the handoff</h3>
+  <p style="font-size:14px;color:var(--text-2);">Write the final step of the <code>gathering-options</code> skill — the part that passes results to <code>verifying-budget</code>. Be specific about what data to pass.</p>
+  <textarea id="a4-handoff" placeholder="At the end of gathering-options instructions:&#10;&#10;When all three subagents have returned results, pass the following to the verifying-budget skill:&#10;- Total estimated flight cost: [amount]&#10;- Total estimated hotel cost: [amount]&#10;- User's original budget: [budget]&#10;Format: ..." style="min-height:130px;"></textarea>
+
+  <h3 style="margin-top:1.5rem;">Step 3 — Reflect on the tradeoff</h3>
+  <p style="font-size:14px;color:var(--text-2);">In one or two sentences: what does the chained version gain compared to the monolithic orchestrator? What does it lose?</p>
+  <textarea id="a4-reflect" placeholder="The chained version gains... but loses..." style="min-height:80px;"></textarea>
+
+  <div style="margin-top:1rem;display:flex;gap:10px;align-items:center;">
+    <button class="btn btn-sm" onclick="checkA4()">Check my work</button>
+    <div id="a4-result" style="font-size:13px;"></div>
+  </div>
+
+  <div class="nav-buttons"><button class="btn" onclick="goTo(9)">← Back</button><button class="btn btn-primary" id="next-10" onclick="goTo(11)">Reflection →</button></div>
+</div>
+
+<!-- 11: Reflection -->
+<div class="section" id="s11">
+  <div class="section-tag">Wrap-up</div>
+  <h1>Reflection</h1>
+  <p class="subtitle">Answer the questions below and submit screenshots in the Google Form.</p>
+
+  <div class="card" style="margin-bottom:1rem;">
+    <div style="font-size:12px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Question 1</div>
+    <p style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:8px;">In your trip planner design, why does each subagent need to receive the budget explicitly even though the orchestrator already knows it?</p>
+    <textarea placeholder="Because subagents have isolated contexts — they have no access to the parent's state or conversation history. Each call is stateless, so everything the subagent needs must be passed in explicitly." style="min-height:90px;"></textarea>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem;">
+    <div style="font-size:12px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Question 2</div>
+    <p style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:8px;">You added a verification loop to the itinerary subagent. What is one thing you would add to make the loop more reliable, and why?</p>
+    <textarea placeholder="Think about: max retry count, what happens when max is reached, whether the criteria are deterministic or judgment-based..." style="min-height:90px;"></textarea>
+  </div>
+
+  <h2>Resources</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:.5rem;">
+    <a href="https://platform.claude.com/docs/en/agent-sdk/subagents" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:var(--accent-text);text-decoration:none;font-size:13.5px;font-weight:500;padding:6px 14px;border:.5px solid var(--accent-border);border-radius:var(--radius);background:var(--accent-bg);">Subagents Docs ↗</a>
+    <a href="https://anthropic.com/research/building-effective-agents" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:var(--accent-text);text-decoration:none;font-size:13.5px;font-weight:500;padding:6px 14px;border:.5px solid var(--accent-border);border-radius:var(--radius);background:var(--accent-bg);">Building Effective Agents ↗</a>
+    <a href="https://claude.com/blog/getting-started-with-loops" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:var(--accent-text);text-decoration:none;font-size:13.5px;font-weight:500;padding:6px 14px;border:.5px solid var(--accent-border);border-radius:var(--radius);background:var(--accent-bg);">Getting Started with Loops ↗</a>
+    <a href="https://claude.com/blog/building-verification-loops-in-claude-code-with-skills" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:var(--accent-text);text-decoration:none;font-size:13.5px;font-weight:500;padding:6px 14px;border:.5px solid var(--accent-border);border-radius:var(--radius);background:var(--accent-bg);">Verification Loops ↗</a>
+  </div>
+
+  <div class="nav-buttons"><button class="btn" onclick="goTo(10)">← Back</button></div>
+</div>
+
+</main>
+</div>
+<script>
+let sectionDone = new Set();
+let unlockedUpTo = 0;
+const openedLinks = new Set();
+const reqState = {};
+
+// Chain sort
+let chainDragged = null;
+// Add sort-item styles for chain list
+const style = document.createElement('style');
+style.textContent = `.chain-list{list-style:none;padding:0;}.chain-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:.5px solid var(--border-strong);border-radius:8px;margin-bottom:8px;cursor:grab;font-size:14px;color:var(--text-2);transition:.15s;user-select:none;}.chain-item .grip{color:var(--text-3);font-size:16px;}.chain-item.over{border-color:var(--accent);background:var(--accent-bg);}`;
+document.head.appendChild(style);
+
+function requirementsFor(n) {
+  if (n===0) return ['quiz'];
+  if (n===1) return ['quiz','read'];
+  if (n===2) return ['quiz','read'];
+  if (n===3) return ['quiz'];
+  if (n===4) return ['quiz','read'];
+  if (n===5) return ['quiz','read'];
+  if (n===6) return ['quiz','read'];
+  if (n===7) return ['design'];
+  if (n===8) return ['loop','loop-choice'];
+  if (n===9) return ['det','det-check'];
+  if (n===10) return ['chain','handoff'];
+  return [];
+}
+
+const readChecksNeeded = {
+  1:['rc1a','rc1b'],
+  2:['rc2a'],
+  4:['rc4a'],
+  5:['rc5a'],
+  6:['rc6a']
+};
+const readSectionOf = {};
+Object.entries(readChecksNeeded).forEach(([sec,ids])=>ids.forEach(id=>readSectionOf[id]=parseInt(sec)));
+
+function markSectionRequirement(n,kind) {
+  reqState[n+'-'+kind]=true;
+  const need=requirementsFor(n);
+  const done=need.every(k=>reqState[n+'-'+k]);
+  if(done) markDone(n);
+}
+
+function markDone(n) {
+  if(sectionDone.has(n)) return;
+  sectionDone.add(n);
+  const dot=document.querySelector('.nav-item[data-section="'+n+'"] .dot');
+  if(dot) dot.parentElement.classList.add('done');
+  const btn=document.getElementById('next-'+n);
+  if(btn) btn.removeAttribute('disabled');
+  while(sectionDone.has(unlockedUpTo)) unlockedUpTo++;
+  if(typeof saveProgress === 'function') saveProgress(n);
+}
+
+function goTo(n) {
+  if(n>unlockedUpTo) {
+    const item=document.querySelector('.nav-item[data-section="'+n+'"]');
+    if(item){item.classList.add('shake');setTimeout(()=>item.classList.remove('shake'),350);}
+    return;
+  }
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el=>{el.classList.remove('active');if(parseInt(el.dataset.section)===n)el.classList.add('active');});
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.nav-item').forEach(el=>el.addEventListener('click',()=>goTo(parseInt(el.dataset.section))));
+document.querySelectorAll('.nav-buttons .btn-primary[id^="next-"]').forEach(b=>b.setAttribute('disabled','true'));
+
+function markOpened(id){openedLinks.add(id);}
+
+function toggleRead(id) {
+  const el=document.getElementById(id);
+  if(!el.classList.contains('checked')&&!openedLinks.has(id)){
+    el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),350);return;
+  }
+  el.classList.toggle('checked');
+  document.getElementById(id+'-box').textContent='✓';
+  const sec=readSectionOf[id];
+  if(sec===undefined) return;
+  const needed=readChecksNeeded[sec];
+  if(needed.every(rid=>document.getElementById(rid).classList.contains('checked'))) markSectionRequirement(sec,'read');
+}
+
+function togglePattern(i){
+  const card=document.getElementById('pat'+i);
+  card.classList.toggle('open');
+}
+
+// Quizzes
+const quizzes={
+  q0:{q:"A complex task has 6 steps. Three are independent of each other. What's the main reason to run those three in parallel rather than sequentially?",opts:["Parallel agents share context, making them smarter","Sequential steps share context which causes interference","Running independent steps in parallel reduces total latency without changing the result","Parallel agents always produce higher quality output"],ans:2,exp:"When steps don't depend on each other's output, parallel execution produces identical results but in a fraction of the time. Latency, not quality, is the gain."},
+  q1:{q:"A subagent finishes its work. Which of the following does it have access to?",opts:["The full conversation history from the parent skill","Its own context window containing only what it was given in this call","A shared memory store with all other subagents","The orchestrator's pending next steps"],ans:1,exp:"Subagents are isolated — they get a fresh context containing only their inputs and their own skill instructions. No shared state, no parent history, no other subagents."},
+  q2:{q:"Content moderation sends each post to one of three specialist agents: toxic, spam, or safe. Which pattern is this?",opts:["Sequential","Parallel","Routing","Evaluator-optimizer"],ans:2,exp:"The input is classified and sent down one of several branches. That's routing — a classifier decides which specialist handles it, not all of them at once."},
+  q3:{q:"Why can't the hotel subagent just 'know' the user's budget without being told?",opts:["Subagents are too small to hold that information","The budget is confidential and can't be shared","Subagents have isolated contexts — they only know what the orchestrator explicitly passes them","The orchestrator must approve all budget decisions first"],ans:2,exp:"Subagent isolation means no shared state. If the orchestrator knows the budget and the subagent needs it, the orchestrator must pass it explicitly in the subagent call."},
+  q4:{q:"A self-check loop runs the same agent for both generating and verifying. What's the main weakness of this approach?",opts:["It uses twice as many tokens as needed","The agent tends to rationalize its own mistakes rather than objectively identifying them","Self-checking is not allowed in agent frameworks","It always results in exactly 3 retries"],ans:1,exp:"Asking the same agent to critique its own output rarely works well — it generated that output for a reason and tends to defend it. A separate evaluator agent with its own prompt gives more objective feedback."},
+  q5:{q:"Which task is the best candidate for a deterministic script?",opts:["Deciding if a travel itinerary sounds fun","Summarizing a hotel description in one sentence","Checking whether a given date string is a valid future date","Estimating how much a traveller might enjoy the destination"],ans:2,exp:"Date validation has one right answer for any given input and can be unit-tested. The others require judgment, preference, or reasoning — LLM territory."},
+  q6:{q:"What is the main advantage of chaining skills over a single monolithic orchestrator?",opts:["Chaining always runs faster","Each skill can be tested, swapped out, or improved independently","Chaining reduces the number of LLM calls","Chained skills share a context window"],ans:1,exp:"Modularity is the point. Each skill in a chain does one thing and can be tested in isolation. You can replace the formatting-output skill without touching the budget-verifying skill."}
+};
+
+function buildQuiz(id){
+  const el=document.getElementById(id);if(!el)return;
+  const data=quizzes[id];if(!data)return;
+  let html=`<div style="margin-bottom:10px;font-size:14px;font-weight:500;color:var(--text);">${data.q}</div>`;
+  data.opts.forEach((o,i)=>{html+=`<div class="quiz-option" id="${id}-opt${i}" onclick="answerQuiz('${id}',${i})"><div class="letter">${'ABCD'[i]}</div>${o}</div>`;});
+  html+=`<div class="quiz-feedback" id="${id}-fb"></div>`;
+  el.innerHTML=html;
+}
+const quizToSection={q0:0,q1:1,q2:2,q3:3,q4:4,q5:5,q6:6};
+function answerQuiz(id,chosen){
+  const data=quizzes[id],fb=document.getElementById(id+'-fb');
+  data.opts.forEach((_,i)=>{const el=document.getElementById(id+'-opt'+i);el.classList.remove('correct','wrong');if(i===data.ans)el.classList.add('correct');else if(i===chosen&&chosen!==data.ans)el.classList.add('wrong');});
+  fb.className='quiz-feedback show '+(chosen===data.ans?'correct':'wrong');
+  fb.textContent=(chosen===data.ans?'✓ Correct! ':'✗ Not quite. ')+data.exp;
+  if(chosen===data.ans){const sec=quizToSection[id];if(sec!==undefined)markSectionRequirement(sec,'quiz');}
+}
+['q0','q1','q2','q3','q4','q5','q6'].forEach(buildQuiz);
+
+// Activity 1 — Trip planner design
+function updateA1Preview(){
+  const n1=document.getElementById('sa1-name').value||'subagent-1';
+  const n2=document.getElementById('sa2-name').value||'subagent-2';
+  const n3=document.getElementById('sa3-name').value||'subagent-3';
+  const instr=document.getElementById('a1-instr').value||'(write your orchestrator instructions above)';
+  document.getElementById('a1-preview').innerHTML=
+    `<span class="y">---</span>\n<span class="y">name</span>: <span class="v">planning-trip</span>\n<span class="y">description</span>: >\n  <span class="v">Plans a complete trip with flights, hotels, and itinerary.</span>\n<span class="y">---</span>\n\n<span class="c">## Subagents</span>\n• <span class="v">${n1}</span>\n• <span class="v">${n2}</span>\n• <span class="v">${n3}</span>\n\n<span class="c">## Instructions</span>\n${instr}`;
+}
+
+function checkA1(){
+  const n1=document.getElementById('sa1-name').value.trim();
+  const n2=document.getElementById('sa2-name').value.trim();
+  const n3=document.getElementById('sa3-name').value.trim();
+  const j1=document.getElementById('sa1-job').value.trim();
+  const j2=document.getElementById('sa2-job').value.trim();
+  const j3=document.getElementById('sa3-job').value.trim();
+  const instr=document.getElementById('a1-instr').value.trim();
+  const res=document.getElementById('a1-result');
+  const val=document.getElementById('a1-validation');
+  let issues=[];
+  [n1,n2,n3].forEach((n,i)=>{if(!n)issues.push(`subagent ${i+1} needs a name`);else if(!/^[a-z0-9-]+$/.test(n))issues.push(`subagent ${i+1} name must be lowercase with hyphens`);});
+  [j1,j2,j3].forEach((j,i)=>{if(!j)issues.push(`subagent ${i+1} needs a job description`);});
+  if(!instr||instr.length<80) issues.push('orchestrator instructions too short — be more explicit about what each subagent gets and how results are assembled');
+  if(instr&&!instr.match(/parallel|at the same time|simultaneously/i)&&!instr.match(/spawn|subagent|delegate/i)) issues.push('instructions should mention spawning subagents');
+  val.textContent=issues.filter(i=>i.includes('name')||i.includes('hyphens')).join('  ');
+  res.style.color=issues.length===0?'var(--success)':'var(--danger)';
+  res.textContent=issues.length===0?'✓ Solid design! Move to Activity 2.':'Fix: '+issues.join('; ')+'.';
+  if(issues.length===0) markSectionRequirement(7,'design');
+}
+
+// Activity 2 — Loop
+let loopChosen=null;
+const loopAnswers={1:"Both B and C work, but they serve different goals. B (conditional) is best for mechanical criteria like activity count — it's objective and fast. C (evaluator) is better for quality judgments. A (fixed) generates variety but doesn't improve quality.",0:"Fixed loops generate multiple options but don't actually improve quality — they just give you three versions to choose from manually. For the itinerary to get better, you need a check that identifies what's wrong.",2:"An evaluator loop works well for quality judgments, but for mechanical criteria like 'every day has at least 2 activities,' a conditional loop is simpler and more reliable — no need to invoke a separate LLM judge just to count activities."};
+
+function selectLoop(i){
+  [0,1,2].forEach(j=>{document.getElementById('lc'+j).classList.remove('correct','wrong');});
+  const fb=document.getElementById('loop-choice-fb');
+  if(i===1){
+    document.getElementById('lc'+i).classList.add('correct');
+    fb.className='quiz-feedback show correct';
+    fb.textContent='✓ Good choice! '+loopAnswers[1];
+    markSectionRequirement(8,'loop-choice');
+  } else {
+    document.getElementById('lc'+i).classList.add('wrong');
+    document.getElementById('lc1').classList.add('correct');
+    fb.className='quiz-feedback show wrong';
+    fb.textContent='✗ Not the best fit. '+loopAnswers[i];
+  }
+  loopChosen=i;
+}
+
+function checkA2(){
+  const instr=document.getElementById('a2-instr').value.trim();
+  const res=document.getElementById('a2-result');
+  let issues=[];
+  if(!instr||instr.length<80) issues.push('instructions too short — be more explicit');
+  if(!instr.match(/check|verify|criteri/i)) issues.push('must include checking criteria');
+  if(!instr.match(/retry|again|loop|attempt|fail/i)) issues.push('must describe what happens on failure/retry');
+  if(!instr.match(/\d|max|limit|times/i)) issues.push('must specify a maximum number of attempts');
+  res.style.color=issues.length===0?'var(--success)':'var(--danger)';
+  res.textContent=issues.length===0?'✓ Loop looks solid!':'Fix: '+issues.join('; ')+'.';
+  if(issues.length===0) markSectionRequirement(8,'loop');
+}
+
+// Activity 3 — Deterministic
+let detSelected=new Set();
+function toggleDetCheck(i){
+  const el=document.getElementById('dc'+i);
+  if(detSelected.has(i)){detSelected.delete(i);el.classList.remove('selected');}
+  else{detSelected.add(i);el.classList.add('selected');}
+}
+function checkDetCheck(){
+  const correct=new Set([1,2]);
+  const fb=document.getElementById('det-check-fb');
+  [0,1,2,3].forEach(i=>{
+    const el=document.getElementById('dc'+i);
+    el.classList.remove('correct','wrong');
+    if(correct.has(i))el.classList.add('correct');
+    else if(detSelected.has(i)&&!correct.has(i))el.classList.add('wrong');
+  });
+  const right=[...correct].every(i=>detSelected.has(i))&&[...detSelected].every(i=>correct.has(i));
+  fb.className='quiz-feedback show '+(right?'correct':'wrong');
+  fb.textContent=right?'✓ Correct! B and C — counting words and checking the threshold — both have one right answer and belong in a script. A and D require judgment.':'✗ Not quite. B (count words) and C (check if under 100) are deterministic — one right answer, can be unit-tested. A and D require judgment and belong in the LLM.';
+  if(right) markSectionRequirement(9,'det-check');
+}
+
+function checkA3(){
+  const instr=document.getElementById('a3-instr').value.trim();
+  const res=document.getElementById('a3-result');
+  let issues=[];
+  if(!instr||instr.length<60) issues.push('instructions too short');
+  if(!instr.match(/script|scripts\/|python|run:/i)) issues.push('must reference a script for the word count');
+  if(!instr.match(/100|word|count/i)) issues.push('must reference the 100-word limit');
+  if(!instr.match(/retry|again|loop|shorten|trim|attempt/i)) issues.push('must describe what to do if over the limit');
+  res.style.color=issues.length===0?'var(--success)':'var(--danger)';
+  res.textContent=issues.length===0?'✓ Script skill looks good!':'Fix: '+issues.join('; ')+'.';
+  if(issues.length===0) markSectionRequirement(9,'det');
+}
+
+// Activity 4 — Chain sort
+document.querySelectorAll('.chain-item').forEach(item=>{
+  item.addEventListener('dragstart',()=>{chainDragged=item;});
+  item.addEventListener('dragend',()=>{chainDragged=null;document.querySelectorAll('.chain-item').forEach(i=>i.classList.remove('over'));});
+  item.addEventListener('dragover',e=>{e.preventDefault();item.classList.add('over');});
+  item.addEventListener('dragleave',()=>item.classList.remove('over'));
+  item.addEventListener('drop',e=>{
+    e.preventDefault();
+    if(chainDragged&&chainDragged!==item){
+      const list=item.parentNode,all=[...list.children],di=all.indexOf(chainDragged),ti=all.indexOf(item);
+      if(di<ti)list.insertBefore(chainDragged,item.nextSibling);else list.insertBefore(chainDragged,item);
+    }
+    item.classList.remove('over');
+  });
+});
+
+function checkChainOrder(){
+  const orders=[...document.querySelectorAll('#chain-sortable .chain-item')].map(i=>parseInt(i.dataset.order));
+  const res=document.getElementById('chain-order-result');
+  res.style.display='block';
+  const ok=JSON.stringify(orders)===JSON.stringify([1,2,3,4]);
+  res.style.color=ok?'var(--success)':'var(--danger)';
+  res.textContent=ok?'✓ Correct! planning-trip → gathering-options → verifying-budget → formatting-trip-plan.':'✗ Not quite. Think: what happens first? What can only happen after options are gathered?';
+  if(ok) markSectionRequirement(10,'chain');
+}
+
+function checkA4(){
+  const handoff=document.getElementById('a4-handoff').value.trim();
+  const reflect=document.getElementById('a4-reflect').value.trim();
+  const res=document.getElementById('a4-result');
+  let issues=[];
+  if(!handoff||handoff.length<40) issues.push('handoff too short — be specific about what data is passed');
+  if(!handoff.match(/budget|cost|price|flight|hotel/i)) issues.push('handoff should mention cost/budget data being passed');
+  if(!reflect||reflect.length<30) issues.push('reflection too short');
+  res.style.color=issues.length===0?'var(--success)':'var(--danger)';
+  res.textContent=issues.length===0?'✓ Great work — all four activities complete!':'Fix: '+issues.join('; ')+'.';
+  if(issues.length===0){markSectionRequirement(10,'handoff');markSectionRequirement(10,'chain');}
+}
+
+const PRELAB_ID = 'prelab-2'
+const SUPABASE_URL = 'https://jfjegonhtmmuublikxpk.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmamVnb25odG1tdXVibGlreHBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMTAxMDEsImV4cCI6MjEwNjY4NjEwMX0.1xEklI15Df1nRSgc9JmIz7dytqS2uWB_hV9ec2PFofM'
+const { createClient } = supabase
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+let currentUser = null
+
+async function initAuth() {
+  const { data: { session } } = await db.auth.getSession()
+  if (!session) { window.location.href = '../index.html'; return }
+  currentUser = session.user
+  const logo = document.querySelector('.sidebar-logo')
+  const userBar = document.createElement('div')
+  userBar.style.cssText = 'padding:8px 1.25rem 0;display:flex;align-items:center;justify-content:space-between;'
+  userBar.innerHTML = `<span style="font-size:12px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;">${currentUser.email}</span><button onclick="doLogout()" style="font-size:11px;padding:3px 8px;border:0.5px solid var(--border-strong);border-radius:6px;background:none;color:var(--text-3);cursor:pointer;">Out</button>`
+  logo.appendChild(userBar)
+  const dashLink = document.createElement('div')
+  dashLink.style.cssText = 'padding:6px 1.25rem 0;'
+  dashLink.innerHTML = `<a href="../dashboard.html" style="font-size:12px;font-weight:500;color:var(--accent-text);text-decoration:none;display:inline-block;padding:5px 10px;background:var(--accent-bg);border:0.5px solid var(--accent-border);border-radius:6px;margin-top:2px;">← Dashboard</a>`
+  logo.appendChild(dashLink)
+  await restoreProgress()
+}
+
+async function restoreProgress() {
+  const { data } = await db.from('progress').select('section_id').eq('user_id', currentUser.id).eq('prelab_id', PRELAB_ID)
+  if (!data || data.length === 0) return
+  const completed = new Set(data.map(r => r.section_id))
+  completed.forEach(sid => {
+    if (!/^section-\d+$/.test(sid)) return
+    const n = parseInt(sid.replace('section-', ''))
+    if (isNaN(n)) return
+    sectionDone.add(n)
+    const dot = document.querySelector('.nav-item[data-section="'+n+'"] .dot')
+    if (dot) dot.parentElement.classList.add('done')
+    const btn = document.getElementById('next-'+n)
+    if (btn) btn.removeAttribute('disabled')
+  })
+  while (sectionDone.has(unlockedUpTo)) unlockedUpTo++
+  if (unlockedUpTo > 0) goTo(Math.min(unlockedUpTo, 11))
+}
+
+async function saveProgress(sectionN) {
+  if (!currentUser) return
+  const { error } = await db.from('progress').insert({
+    user_id: currentUser.id, prelab_id: PRELAB_ID, section_id: 'section-' + sectionN
+  })
+  if (error && error.code !== '23505') console.error('Progress save error:', error)
+}
+
+async function doLogout() {
+  await db.auth.signOut()
+  window.location.href = '../index.html'
+}
+
+initAuth()
+</script>
+</body>
+</html>

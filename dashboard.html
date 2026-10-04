@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GenAI SkillBuilding: Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4fa; color: #1a1a1a; min-height: 100vh; }
+
+    nav { background: white; border-bottom: 1px solid #e0e8f5; padding: 0 32px; height: 56px; display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { font-size: 17px; font-weight: 600; color: #1a1a1a; }
+    .nav-logo span { color: #f5c100; }
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .nav-email { font-size: 13px; color: #888; }
+    button.logout { padding: 6px 14px; background: transparent; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 13px; color: #666; cursor: pointer; transition: all 0.15s; }
+    button.logout:hover { border-color: #1a55a8; color: #1a55a8; }
+    .accent-bar { height: 3px; background: linear-gradient(90deg, #1a55a8, #f5c100); }
+
+    .container { max-width: 960px; margin: 40px auto; padding: 0 24px; }
+    .welcome { font-size: 24px; font-weight: 600; margin-bottom: 6px; }
+    .welcome-sub { font-size: 15px; color: #666; margin-bottom: 36px; }
+
+    .week-block { margin-bottom: 40px; }
+    .week-label { font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #e0e8f5; }
+
+    .row { display: grid; grid-template-columns: 1fr 280px; gap: 14px; margin-bottom: 14px; align-items: start; }
+
+    /* Prelab card */
+    .prelab-card { background: white; border-radius: 12px; padding: 22px 24px; border: 1.5px solid #e0e8f5; cursor: pointer; transition: all 0.15s; text-decoration: none; color: inherit; display: block; }
+    .prelab-card:hover { border-color: #1a55a8; box-shadow: 0 4px 16px rgba(26,85,168,0.1); transform: translateY(-1px); }
+    .prelab-card.locked { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+    .card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+    .prelab-number { font-size: 11px; font-weight: 600; color: #1a55a8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge.complete { background: #e8f5e9; color: #2e7d32; }
+    .badge.in-progress { background: #e8f0fe; color: #1a55a8; }
+    .badge.not-started { background: #f5f5f5; color: #999; }
+    .badge.coming-soon { background: #fff8e6; color: #b8860b; }
+    .prelab-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .prelab-desc { font-size: 13px; color: #666; line-height: 1.5; margin-bottom: 14px; }
+    .progress-bar-bg { height: 5px; background: #e0e8f5; border-radius: 4px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #1a55a8, #f5c100); border-radius: 4px; transition: width 0.5s ease; }
+    .progress-label { font-size: 12px; color: #888; margin-top: 5px; }
+
+    /* Quiz card */
+    .quiz-card { background: white; border-radius: 12px; padding: 18px 20px; border: 1.5px solid #e0e8f5; text-decoration: none; color: inherit; display: block; cursor: pointer; transition: all 0.15s; }
+    .quiz-card:hover { border-color: #f5c100; box-shadow: 0 4px 16px rgba(245,193,0,0.12); transform: translateY(-1px); }
+    .quiz-card.locked { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+    .quiz-card.submitted { border-color: #a5d6a7; }
+    .quiz-tag { font-size: 11px; font-weight: 600; color: #b8860b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .quiz-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .quiz-meta { font-size: 12px; color: #888; }
+    .quiz-score { font-size: 20px; font-weight: 700; color: #1a55a8; margin-top: 8px; }
+    .quiz-score-label { font-size: 11px; color: #888; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">GenAI <span>SkillBuilding</span></div>
+  <div class="nav-right">
+    <span class="nav-email" id="user-email"></span>
+    <button class="logout" onclick="logout()">Log out</button>
+  </div>
+</nav>
+<div class="accent-bar"></div>
+
+<div class="container">
+  <div class="welcome">Welcome back, <span id="user-name">there</span> 👋</div>
+  <div class="welcome-sub">Pick up where you left off.</div>
+
+  <!-- Week 1 -->
+  <div class="week-block">
+    <div class="week-label">Week 1 — Prompt Engineering & Agent Skills</div>
+    <div class="row">
+      <a class="prelab-card" href="prelabs/prelab1.html" id="card-p1">
+        <div class="card-top">
+          <div class="prelab-number">Prelab 1</div>
+          <span class="badge not-started" id="badge-p1">Not started</span>
+        </div>
+        <div class="prelab-title">Intro to Prompt Engineering & Agent Skills</div>
+        <div class="prelab-desc">Zero-shot vs few-shot, chain of thought, agents, and writing your first agent skill.</div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-p1" style="width:0%"></div></div>
+        <div class="progress-label" id="label-p1">Not started</div>
+      </a>
+      <a class="quiz-card" href="quizzes/prelab1-quiz.html" id="card-q1">
+        <div class="quiz-tag">📝 Graded Quiz</div>
+        <div class="quiz-title">Prelab 1 Quiz</div>
+        <div class="quiz-meta" id="meta-q1">10 questions · Based on readings</div>
+        <div class="quiz-score" id="score-q1" style="display:none"></div>
+        <div class="quiz-score-label" id="score-label-q1"></div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Week 2 -->
+  <div class="week-block">
+    <div class="week-label">Week 2 — Agent Skill Design Patterns</div>
+    <div class="row">
+      <a class="prelab-card" href="prelabs/prelab2.html" id="card-p2">
+        <div class="card-top">
+          <div class="prelab-number">Prelab 2</div>
+          <span class="badge not-started" id="badge-p2">Not started</span>
+        </div>
+        <div class="prelab-title">Agent Skill Design Patterns</div>
+        <div class="prelab-desc">Subagents, loop patterns, deterministic scripts, and chaining skills together.</div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-p2" style="width:0%"></div></div>
+        <div class="progress-label" id="label-p2">Not started</div>
+      </a>
+      <a class="quiz-card" href="quizzes/prelab2-quiz.html" id="card-q2">
+        <div class="quiz-tag">📝 Graded Quiz</div>
+        <div class="quiz-title">Prelab 2 Quiz</div>
+        <div class="quiz-meta" id="meta-q2">10 questions · Based on readings</div>
+        <div class="quiz-score" id="score-q2" style="display:none"></div>
+        <div class="quiz-score-label" id="score-label-q2"></div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Week 3 -->
+  <div class="week-block">
+    <div class="week-label">Week 3 — Evaluations & Optimization</div>
+    <div class="row">
+      <a class="prelab-card" href="prelabs/prelab3.html" id="card-p3">
+        <div class="card-top">
+          <div class="prelab-number">Prelab 3</div>
+          <span class="badge not-started" id="badge-p3">Not started</span>
+        </div>
+        <div class="prelab-title">Evaluating & Optimizing Agent Skills</div>
+        <div class="prelab-desc">Eval suites, LLM-as-a-judge, GEPA, observability, and tracing.</div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-p3" style="width:0%"></div></div>
+        <div class="progress-label" id="label-p3">Not started</div>
+      </a>
+      <a class="quiz-card" href="quizzes/prelab3-quiz.html" id="card-q3">
+        <div class="quiz-tag">📝 Graded Quiz</div>
+        <div class="quiz-title">Prelab 3 Quiz</div>
+        <div class="quiz-meta" id="meta-q3">10 questions · Based on readings</div>
+        <div class="quiz-score" id="score-q3" style="display:none"></div>
+        <div class="quiz-score-label" id="score-label-q3"></div>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://jfjegonhtmmuublikxpk.supabase.co'
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmamVnb25odG1tdXVibGlreHBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMTAxMDEsImV4cCI6MjEwNjY4NjEwMX0.1xEklI15Df1nRSgc9JmIz7dytqS2uWB_hV9ec2PFofM'
+  const { createClient } = supabase
+  const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+  // Milestones per prelab — must match what the prelab files save
+  const PRELAB_CONFIG = {
+    'prelab-1': { total: 14, barId: 'bar-p1', labelId: 'label-p1', badgeId: 'badge-p1' },
+    'prelab-2': { total: 12, barId: 'bar-p2', labelId: 'label-p2', badgeId: 'badge-p2' },
+    'prelab-3': { total: 10, barId: 'bar-p3', labelId: 'label-p3', badgeId: 'badge-p3' },
+  }
+
+  const QUIZ_CONFIG = {
+    'prelab-1-quiz': { scoreId: 'score-q1', labelId: 'score-label-q1', metaId: 'meta-q1', cardId: 'card-q1' },
+    'prelab-2-quiz': { scoreId: 'score-q2', labelId: 'score-label-q2', metaId: 'meta-q2', cardId: 'card-q2' },
+    'prelab-3-quiz': { scoreId: 'score-q3', labelId: 'score-label-q3', metaId: 'meta-q3', cardId: 'card-q3' },
+  }
+
+  async function init() {
+    const { data: { session } } = await db.auth.getSession()
+    if (!session) { window.location.href = 'index.html'; return }
+
+    const user = session.user
+    document.getElementById('user-email').textContent = user.email
+
+    let profile = null
+    for (let i = 0; i < 3; i++) {
+      const { data } = await db.from('profiles').select('full_name, role').eq('id', user.id).single()
+      if (data) { profile = data; break }
+      await new Promise(r => setTimeout(r, 500))
+    }
+    if (profile) {
+      document.getElementById('user-name').textContent = profile.full_name?.split(' ')[0] || 'there'
+      if (profile.role === 'instructor') { window.location.href = 'instructor.html'; return }
+    }
+
+    await loadAllProgress(user.id)
+    await loadAllQuizzes(user.id)
+  }
+
+  async function loadAllProgress(userId) {
+    const { data } = await db.from('progress').select('prelab_id, section_id').eq('user_id', userId)
+    if (!data) return
+
+    // Group by prelab
+    const byPrelab = {}
+    data.forEach(r => {
+      if (!byPrelab[r.prelab_id]) byPrelab[r.prelab_id] = new Set()
+      byPrelab[r.prelab_id].add(r.section_id)
+    })
+
+    Object.entries(PRELAB_CONFIG).forEach(([prelabId, cfg]) => {
+      const completed = byPrelab[prelabId] || new Set()
+      // Count only granular section IDs (section-0, section-1, etc.)
+      const done = [...completed].filter(s => /^section-\d+$/.test(s)).length
+      const total = cfg.total
+      const pct = Math.round((Math.min(done, total) / total) * 100)
+
+      document.getElementById(cfg.barId).style.width = pct + '%'
+
+      const badge = document.getElementById(cfg.badgeId)
+      if (pct === 0) {
+        document.getElementById(cfg.labelId).textContent = 'Not started'
+        badge.textContent = 'Not started'; badge.className = 'badge not-started'
+      } else if (pct === 100) {
+        document.getElementById(cfg.labelId).textContent = '✓ Complete'
+        badge.textContent = 'Complete'; badge.className = 'badge complete'
+      } else {
+        document.getElementById(cfg.labelId).textContent = `${done} of ${total} sections done`
+        badge.textContent = 'In progress'; badge.className = 'badge in-progress'
+      }
+    })
+  }
+
+  async function loadAllQuizzes(userId) {
+    const { data } = await db.from('quiz_results').select('quiz_id, score, total, submitted_at').eq('user_id', userId)
+    if (!data) return
+
+    // Most recent per quiz
+    const byQuiz = {}
+    data.forEach(r => {
+      if (!byQuiz[r.quiz_id] || r.submitted_at > byQuiz[r.quiz_id].submitted_at) byQuiz[r.quiz_id] = r
+    })
+
+    Object.entries(QUIZ_CONFIG).forEach(([quizId, cfg]) => {
+      const result = byQuiz[quizId]
+      if (result) {
+        const pct = Math.round((result.score / result.total) * 100)
+        document.getElementById(cfg.metaId).style.display = 'none'
+        document.getElementById(cfg.scoreId).textContent = `${result.score}/${result.total}`
+        document.getElementById(cfg.scoreId).style.display = 'block'
+        document.getElementById(cfg.labelId).textContent = `${pct}% · Submitted`
+        document.getElementById(cfg.cardId).classList.add('submitted')
+      }
+    })
+  }
+
+  async function logout() {
+    await db.auth.signOut()
+    window.location.href = 'index.html'
+  }
+
+  init()
+</script>
+</body>
+</html>

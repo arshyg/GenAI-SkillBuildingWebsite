@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prelab 3 — GenAI SkillBuilding</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #f8f7f4;
+    --surface: #ffffff;
+    --surface-2: #f1efe8;
+    --border: rgba(0,0,0,0.1);
+    --border-strong: rgba(0,0,0,0.18);
+    --text: #1a1a18;
+    --text-2: #555550;
+    --text-3: #888780;
+    --accent: #5034c4;
+    --accent-bg: #eeedfe;
+    --accent-border: #afa9ec;
+    --accent-text: #3c3489;
+    --success: #0f6e56;
+    --success-bg: #e1f5ee;
+    --success-border: #9fe1cb;
+    --danger: #993c1d;
+    --danger-bg: #faece7;
+    --warning-bg: #faeeda;
+    --warning-text: #633806;
+    --teal: #1d9e75;
+    --coral: #d85a30;
+    --radius: 8px;
+    --mono: 'Fira Code', 'Courier New', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  .app { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 0.5px solid var(--border-strong);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 1.5rem 0;
+  }
+  .sidebar-logo {
+    padding: 0 1.25rem 1.25rem;
+    border-bottom: 0.5px solid var(--border);
+    margin-bottom: 0.75rem;
+  }
+  .sidebar-logo .label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-3);
+  }
+  .sidebar-logo h2 {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    margin-top: 2px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 1.25rem;
+    font-size: 13px;
+    color: var(--text-2);
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .nav-item:hover { color: var(--text); background: var(--surface-2); }
+  .nav-item.active {
+    color: var(--accent-text);
+    border-left-color: var(--accent);
+    background: var(--accent-bg);
+    font-weight: 500;
+  }
+  .nav-item .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border-strong); flex-shrink: 0; }
+  .nav-item.done .dot { background: var(--success); }
+  .nav-item.active .dot { background: var(--accent); }
+  .nav-section-label {
+    padding: 0.75rem 1.25rem 0.25rem;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  .progress-bar-wrap { padding: 1rem 1.25rem 0; margin-top: auto; }
+  .progress-label { font-size: 12px; color: var(--text-3); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .progress-track { height: 4px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.3s; }
+
+  .main { flex: 1; max-width: 760px; margin: 0 auto; padding: 3rem 2.5rem 6rem; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .section-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent-text);
+    background: var(--accent-bg);
+    padding: 3px 10px;
+    border-radius: 99px;
+    margin-bottom: 0.75rem;
+    border: 0.5px solid var(--accent-border);
+  }
+  h1 { font-size: 26px; font-weight: 500; margin-bottom: 0.5rem; line-height: 1.3; }
+  h2 { font-size: 18px; font-weight: 500; margin: 2rem 0 0.75rem; }
+  h3 { font-size: 15px; font-weight: 500; margin: 1.5rem 0 0.5rem; color: var(--text); }
+  p { margin-bottom: 1rem; color: var(--text-2); }
+  p strong { color: var(--text); font-weight: 500; }
+  .subtitle { font-size: 16px; color: var(--text-2); margin-bottom: 2rem; }
+  ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; color: var(--text-2); }
+  li { margin-bottom: 0.35rem; }
+  li strong { color: var(--text); }
+
+  .card { background: var(--surface); border: 0.5px solid var(--border-strong); border-radius: 12px; padding: 1.25rem 1.5rem; margin: 1.25rem 0; }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 1.25rem 0; }
+  .card-sm { background: var(--surface); border: 0.5px solid var(--border-strong); border-radius: 12px; padding: 1rem 1.25rem; }
+  .card-sm .icon { font-size: 20px; margin-bottom: 0.5rem; color: var(--accent-text); }
+  .card-sm h4 { font-size: 14px; font-weight: 500; margin-bottom: 0.25rem; }
+  .card-sm p { font-size: 13px; color: var(--text-2); margin: 0; }
+
+  .callout { border-radius: 8px; padding: 0.875rem 1rem; margin: 1rem 0; font-size: 14px; border-left: 3px solid; }
+  .callout-info { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+  .callout-tip { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+  .callout-warn { background: var(--warning-bg); border-color: #ba7517; color: var(--warning-text); }
+  .callout strong { font-weight: 500; display: block; margin-bottom: 2px; }
+
+  code { font-family: var(--mono); font-size: 12.5px; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; color: var(--text); }
+  pre { background: #1e1e1e; color: #d4d4d4; border-radius: 8px; padding: 1rem 1.25rem; font-family: var(--mono); font-size: 12.5px; line-height: 1.65; overflow-x: auto; margin: 1rem 0; }
+  pre .c { color: #6a9955; }
+  pre .k { color: #569cd6; }
+  pre .s { color: #ce9178; }
+  pre .n { color: #9cdcfe; }
+
+  .ext-link {
+    display: inline-flex; align-items: center; gap: 5px; color: var(--accent-text); text-decoration: none;
+    font-size: 13.5px; font-weight: 500; padding: 6px 14px; border: 0.5px solid var(--accent-border);
+    border-radius: var(--radius); background: var(--accent-bg); transition: 0.15s; margin: 0.25rem 0.25rem 0.25rem 0; cursor: pointer;
+  }
+  .ext-link:hover { background: var(--accent-border); }
+  .ext-link svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+  .activity { border: 1.5px solid var(--accent-border); border-radius: 12px; overflow: hidden; margin: 1.5rem 0; }
+  .activity-header { background: var(--accent-bg); padding: 0.875rem 1.25rem; display: flex; align-items: center; gap: 10px; }
+  .activity-header .badge { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; background: var(--accent); color: white; padding: 2px 8px; border-radius: 99px; }
+  .activity-header h4 { font-size: 14px; font-weight: 500; color: var(--accent-text); }
+  .activity-body { padding: 1.25rem; }
+
+  .quiz-option { display: flex; align-items: flex-start; gap: 10px; padding: 0.75rem 1rem; border: 0.5px solid var(--border-strong); border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: 0.15s; font-size: 14px; color: var(--text-2); background: var(--surface); }
+  .quiz-option:hover { border-color: var(--accent-border); background: var(--accent-bg); }
+  .quiz-option.selected { border-color: var(--accent); background: var(--accent-bg); color: var(--accent-text); }
+  .quiz-option.correct { border-color: var(--success); background: var(--success-bg); color: var(--success); }
+  .quiz-option.wrong { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); }
+  .quiz-option .letter { width: 20px; height: 20px; border-radius: 50%; background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; color: var(--text-3); margin-top: 1px; }
+  .quiz-option.correct .letter { background: var(--success); color: white; }
+  .quiz-option.wrong .letter { background: var(--danger); color: white; }
+  .quiz-option.selected .letter { background: var(--accent); color: white; }
+  .quiz-feedback { display: none; padding: 0.75rem 1rem; border-radius: 8px; font-size: 13.5px; margin-top: 0.75rem; }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: var(--success-bg); color: var(--success); border: 0.5px solid var(--success-border); }
+  .quiz-feedback.wrong { background: var(--danger-bg); color: var(--danger); border: 0.5px solid #f5c4b3; }
+
+  textarea { width: 100%; border: 0.5px solid var(--border-strong); border-radius: 8px; padding: 0.75rem 1rem; font-size: 14px; font-family: inherit; color: var(--text); background: var(--surface); resize: vertical; min-height: 100px; transition: 0.15s; outline: none; }
+  textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-bg); }
+  textarea::placeholder { color: var(--text-3); }
+
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); font-size: 13.5px; font-weight: 500; cursor: pointer; transition: 0.15s; }
+  .btn:hover { background: var(--surface-2); }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .btn-primary:hover { background: #3c3489; }
+  .btn-sm { padding: 5px 12px; font-size: 12.5px; }
+
+  hr { border: none; border-top: 0.5px solid var(--border); margin: 2rem 0; }
+
+  .read-check { display: flex; align-items: center; gap: 10px; padding: 0.75rem 1rem; background: var(--surface-2); border-radius: 8px; margin-top: 1.25rem; cursor: pointer; font-size: 14px; color: var(--text-2); border: 0.5px solid var(--border); user-select: none; transition: 0.15s; }
+  .read-check:hover { background: var(--surface); }
+  .read-check.checked { background: var(--success-bg); color: var(--success); border-color: var(--success-border); }
+  .read-check .box { width: 18px; height: 18px; border: 1.5px solid var(--border-strong); border-radius: 4px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+  .read-check.checked .box { background: var(--success); border-color: var(--success); color: white; }
+
+  .sort-list { list-style: none; padding: 0; }
+  .sort-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface); border: 0.5px solid var(--border-strong); border-radius: 8px; margin-bottom: 8px; cursor: grab; font-size: 14px; color: var(--text-2); transition: 0.15s; user-select: none; }
+  .sort-item:active { cursor: grabbing; opacity: 0.7; }
+  .sort-item .grip { color: var(--text-3); font-size: 16px; }
+  .sort-item.dragging { opacity: 0.4; }
+  .sort-item.over { border-color: var(--accent); background: var(--accent-bg); }
+
+  .nav-buttons { display: flex; gap: 10px; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); }
+
+  .skill-field { margin-bottom: 1rem; }
+  .skill-field label { display: block; font-size: 12.5px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .skill-field input { width: 100%; padding: 8px 12px; border: 0.5px solid var(--border-strong); border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--text); background: var(--surface); outline: none; transition: 0.15s; }
+  .skill-field input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-bg); }
+  .skill-preview { background: #1e1e1e; color: #d4d4d4; border-radius: 8px; padding: 1rem 1.25rem; font-family: var(--mono); font-size: 12px; line-height: 1.65; min-height: 220px; white-space: pre-wrap; word-break: break-word; }
+  .skill-preview .y { color: #9cdcfe; }
+  .skill-preview .v { color: #ce9178; }
+  .skill-preview .c { color: #6a9955; }
+
+  .checklist-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); cursor: pointer; font-size: 14px; color: var(--text-2); }
+  .checklist-item:last-child { border: none; }
+  .checklist-item input[type=checkbox] { margin-top: 3px; accent-color: var(--accent); width: 15px; height: 15px; flex-shrink: 0; }
+  .checklist-item.done { text-decoration: line-through; color: var(--text-3); }
+
+  .match-row { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+  .match-term { flex: 1; padding: 8px 12px; background: var(--accent-bg); border: 0.5px solid var(--accent-border); border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--accent-text); }
+  .match-select { flex: 1.5; padding: 8px 12px; border: 0.5px solid var(--border-strong); border-radius: 8px; font-size: 13px; font-family: inherit; color: var(--text); background: var(--surface); outline: none; }
+  .match-select:focus { border-color: var(--accent); }
+  .match-select.correct { border-color: var(--success); background: var(--success-bg); color: var(--success); }
+  .match-select.wrong { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); }
+
+  .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 500; margin-right: 4px; }
+  .tag-blue { background: #e6f1fb; color: #185fa5; }
+  .tag-teal { background: #e1f5ee; color: #0f6e56; }
+  .tag-coral { background: #faece7; color: #993c1d; }
+
+  /* --- additions for Week 3: sliders + stat cards + reveal grid --- */
+  input[type=range] { width: 100%; accent-color: var(--accent); margin: 6px 0 2px; }
+  .slider-row { margin-bottom: 1.1rem; }
+  .slider-row .slider-label { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-2); font-family: var(--mono); }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 1rem; }
+  .stat-card { border: 0.5px solid var(--border-strong); border-radius: 10px; padding: 0.9rem 1.1rem; background: var(--surface-2); }
+  .stat-card .stat-label { font-size: 11.5px; color: var(--text-3); margin-bottom: 4px; }
+  .stat-card .stat-value { font-size: 26px; font-weight: 600; color: var(--accent-text); }
+  .stat-card.k .stat-value { color: var(--coral); }
+  .reveal-card { cursor: pointer; }
+  .reveal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 1rem 0; }
+  @media (max-width: 700px) { .reveal-grid { grid-template-columns: 1fr; } }
+  .pareto-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; margin: 1rem 0; }
+  .pareto-table th { padding: 8px; font-weight: 500; color: var(--text-2); font-size: 12px; }
+  .pareto-table td { padding: 8px; border-top: 0.5px solid var(--border); }
+  .pareto-table td:first-child { text-align: left; font-weight: 500; color: var(--text); }
+  .pareto-win { background: var(--success-bg); color: var(--success); font-weight: 600; }
+  .pareto-lose { background: var(--danger-bg); color: var(--danger); font-weight: 600; }
+  .trace-line { font-family: var(--mono); font-size: 12px; color: var(--text-2); padding: 3px 0; }
+  .trace-flag { background: var(--danger-bg); color: var(--danger); border-radius: 6px; padding: 6px 8px; margin: 3px 0; }
+
+
+  /* --- flip cards --- */
+  .flip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 1.25rem 0; }
+  .flip-card { perspective: 1200px; cursor: pointer; min-height: 168px; }
+  .flip-card-inner { position: relative; width: 100%; height: 100%; min-height: 168px; transition: transform 0.5s; transform-style: preserve-3d; }
+  .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+  .flip-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 0.5px solid var(--border-strong); background: var(--surface); padding: 0.9rem 1.1rem; display: flex; flex-direction: column; justify-content: center; }
+  .flip-face .icon { font-size: 19px; margin-bottom: 0.4rem; }
+  .flip-face h4 { font-size: 13.5px; font-weight: 500; margin-bottom: 0.2rem; }
+  .flip-face p { font-size: 12.5px; color: var(--text-2); margin: 0; }
+  .flip-back { transform: rotateY(180deg); background: var(--accent-bg); border-color: var(--accent-border); }
+  .flip-back p, .flip-back .verdict { font-size: 12.5px; color: var(--accent-text); margin: 0; }
+  .flip-back.verdict-bad { background: var(--danger-bg); border-color: #f5c4b3; }
+  .flip-back.verdict-bad p { color: var(--danger); }
+  .flip-back.verdict-good { background: var(--success-bg); border-color: var(--success-border); }
+  .flip-back.verdict-good p { color: var(--success); }
+  .flip-hint { font-size: 10px; color: var(--text-3); text-align: center; margin-top: 5px; }
+
+  /* --- gating / locking --- */
+  .btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+  .btn[disabled]:hover { background: var(--surface); }
+  .nav-item.locked { opacity: 0.45; }
+  .shake { animation: shake 0.35s; }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  .section-hint { font-size: 12.5px; color: var(--text-3); margin-top: 0.5rem; font-style: italic; }
+
+  /* --- instructor dashboard --- */
+  #instructor-panel table th, #instructor-panel table td { text-align: left; }
+
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .main { padding: 1.5rem 1.25rem; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+<nav class="sidebar" role="navigation" aria-label="Prelab sections">
+  <div class="sidebar-logo">
+    <div class="label">Week 3 · Prelab</div>
+    <h2>Evaluating & Optimizing Skills</h2>
+  </div>
+
+  <div class="nav-section-label">Foundations</div>
+  <div class="nav-item active" data-section="0"><span class="dot"></span>Why evaluate at all?</div>
+  <div class="nav-item" data-section="1"><span class="dot"></span>Two jobs for an eval suite</div>
+  <div class="nav-item" data-section="2"><span class="dot"></span>Grading methods</div>
+
+  <div class="nav-section-label">Deep Dive</div>
+  <div class="nav-item" data-section="3"><span class="dot"></span>Deterministic checks</div>
+  <div class="nav-item" data-section="4"><span class="dot"></span>LLM-as-a-judge</div>
+  <div class="nav-item" data-section="5"><span class="dot"></span>GEPA / optimizer</div>
+
+  <div class="nav-section-label">Best Practices</div>
+  <div class="nav-item" data-section="6"><span class="dot"></span>Observability &amp; tools</div>
+  <div class="nav-item" data-section="7"><span class="dot"></span>Watch-outs</div>
+
+  <div class="nav-section-label">Activities</div>
+  <div class="nav-item" data-section="8"><span class="dot"></span>Build a test suite</div>
+  <div class="nav-item" data-section="9"><span class="dot"></span>Checklist & reflection</div>
+
+  <div class="progress-bar-wrap">
+    <div class="progress-label"><span>Progress</span><span id="prog-pct">0%</span></div>
+    <div class="progress-track"><div class="progress-fill" id="prog-fill" style="width: 0%"></div></div>
+  </div>
+</nav>
+
+<main class="main">
+
+<!-- 0: Why evaluate at all -->
+<div class="section active" id="s0">
+  <div class="section-tag">Foundations · 1 of 3</div>
+  <h1>Why evaluate at all?</h1>
+  <p class="subtitle">A skill is only as good as its ability to be checked. Before you can improve a skill, you need precise words for the pieces of a check — "test case" alone isn't enough.</p>
+
+  <p>You already know the basic building block: a <strong>test case</strong> is an input, an expected behavior, and a pass/fail condition. That's correct — but the field uses more specific words for what happens when you actually run one, and those words matter once you're running many test cases across many runs.</p>
+
+  <p style="font-size:13px; color:var(--text-3);">Click each card to flip it.</p>
+  <div class="flip-grid">
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-card-inner">
+        <div class="flip-face flip-front"><div class="icon">🗂️</div><h4>Task</h4><p>Click to see the definition</p></div>
+        <div class="flip-face flip-back"><p>A single test with a defined input and success criteria. "Plan a 3-day trip under $900."</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-card-inner">
+        <div class="flip-face flip-front"><div class="icon">🎲</div><h4>Trial</h4><p>Click to see the definition</p></div>
+        <div class="flip-face flip-back"><p>One attempt at a task. Outputs vary run to run — one trial alone isn't enough to trust.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-card-inner">
+        <div class="flip-face flip-front"><div class="icon">⚖️</div><h4>Grader</h4><p>Click to see the definition</p></div>
+        <div class="flip-face flip-back"><p>The scoring logic for part of an output. One task can have several graders.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-card-inner">
+        <div class="flip-face flip-front"><div class="icon">📜</div><h4>Transcript</h4><p>Click to see the definition</p></div>
+        <div class="flip-face flip-back"><p>The full record of a trial — every tool call, every step — not just the final answer.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-card-inner">
+        <div class="flip-face flip-front"><div class="icon">✅</div><h4>Outcome</h4><p>Click to see the definition</p></div>
+        <div class="flip-face flip-back"><p>The real end state. If the output says "booked," the outcome is whether a booking exists.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-card-inner">
+        <div class="flip-face flip-front"><div class="icon">🏗️</div><h4>Harness</h4><p>Click to see the definition</p></div>
+        <div class="flip-face flip-back"><p>The infrastructure that runs tasks, records trials, applies graders, and aggregates a score.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Why this matters</strong>
+    "The skill failed" is vague. "Trial 3 of task 7 failed the budget grader because the transcript shows a stale currency-conversion tool call" is something you can actually act on.
+  </div>
+
+  <h2>Match the definition to the term</h2>
+  <p style="font-size:14px;">Each row describes one of the words above. Pick the term it matches.</p>
+
+  <div id="match-rows-0">
+    <div class="match-row">
+      <div class="match-term">The full record of every tool call and reasoning step in one run — not just the final answer</div>
+      <select class="match-select" data-answer="transcript" onchange="checkMatch(this,'match-result-0')">
+        <option value="">— choose —</option>
+        <option value="task">Task</option><option value="trial">Trial</option><option value="grader">Grader</option>
+        <option value="transcript">Transcript</option><option value="outcome">Outcome</option>
+      </select>
+    </div>
+    <div class="match-row">
+      <div class="match-term">One attempt at a task — you need several since outputs vary</div>
+      <select class="match-select" data-answer="trial" onchange="checkMatch(this,'match-result-0')">
+        <option value="">— choose —</option>
+        <option value="task">Task</option><option value="trial">Trial</option><option value="grader">Grader</option>
+        <option value="transcript">Transcript</option><option value="outcome">Outcome</option>
+      </select>
+    </div>
+    <div class="match-row">
+      <div class="match-term">The scoring logic used to check part of an output</div>
+      <select class="match-select" data-answer="grader" onchange="checkMatch(this,'match-result-0')">
+        <option value="">— choose —</option>
+        <option value="task">Task</option><option value="trial">Trial</option><option value="grader">Grader</option>
+        <option value="transcript">Transcript</option><option value="outcome">Outcome</option>
+      </select>
+    </div>
+    <div class="match-row">
+      <div class="match-term">The real end state, not what the output claims happened</div>
+      <select class="match-select" data-answer="outcome" onchange="checkMatch(this,'match-result-0')">
+        <option value="">— choose —</option>
+        <option value="task">Task</option><option value="trial">Trial</option><option value="grader">Grader</option>
+        <option value="transcript">Transcript</option><option value="outcome">Outcome</option>
+      </select>
+    </div>
+    <div class="match-row">
+      <div class="match-term">A single test with a defined input and success criteria</div>
+      <select class="match-select" data-answer="task" onchange="checkMatch(this,'match-result-0')">
+        <option value="">— choose —</option>
+        <option value="task">Task</option><option value="trial">Trial</option><option value="grader">Grader</option>
+        <option value="transcript">Transcript</option><option value="outcome">Outcome</option>
+      </select>
+    </div>
+  </div>
+  <div id="match-result-0" style="display:none; margin-top:0.75rem;" class="callout callout-tip">All correct! You've got the vocabulary down.</div>
+
+  <h2>Required reading</h2>
+  <p class="section-hint" style="margin-top:-0.5rem; margin-bottom:0.75rem;">Open the link first, then check it off — the checkbox won't tick until you've opened it.</p>
+  <div class="read-check" id="rc0a" onclick="toggleRead('rc0a')">
+    <div class="box" id="rc0a-box">✓</div>
+    <div>
+      <div style="font-weight:500;font-size:14px;">Demystifying Evals for AI Agents (Anthropic)</div>
+      <div style="font-size:12px; color:var(--text-3); margin-top:2px;">Focus on: task/trial/grader/transcript vocabulary, and how a harness fits together</div>
+    </div>
+    <a href="https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents" target="_blank" style="margin-left:auto; font-size:12px; color:var(--accent-text); text-decoration:none; white-space:nowrap;" onclick="event.stopPropagation(); markOpened('rc0a')">Open ↗</a>
+  </div>
+
+  <div class="nav-buttons">
+    <button class="btn btn-primary" id="next-0" onclick="goTo(1)">Next: Two jobs for an eval suite →</button>
+  </div>
+</div>
+
+<!-- 1: Capability vs regression + pass@k -->
+<div class="section" id="s1">
+  <div class="section-tag">Foundations · 2 of 3</div>
+  <h1>Two jobs for an eval suite</h1>
+  <p class="subtitle">The same skill needs two different kinds of eval, asking opposite questions — and expecting opposite pass rates.</p>
+
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="card-sm" style="border-top:3px solid var(--coral);">
+      <h4>Capability eval</h4>
+      <p><strong>Asks:</strong> "What can this skill do well?" Deliberately hard tasks. Should <strong>start low</strong> — that's the hill you're climbing, not a failure.</p>
+    </div>
+    <div class="card-sm" style="border-top:3px solid var(--teal);">
+      <h4>Regression eval</h4>
+      <p><strong>Asks:</strong> "Does it still do what it used to?" Tasks it already solves. Should sit <strong>near 100%</strong> — a drop means something broke.</p>
+    </div>
+  </div>
+
+  <div class="callout callout-warn">
+    <strong>A common mix-up</strong>
+    A low score on a capability eval is expected progress. A low score on a regression eval is a bug. Mixing the two into one number hides which one you're looking at.
+  </div>
+
+  <h2>pass@k vs. pass^k</h2>
+  <p>Outputs vary run to run, so "did it pass?" is really a question about probability across trials — and there are two very different ways to report it.</p>
+  <div class="card-grid" style="grid-template-columns:1fr 1fr;">
+    <div class="card-sm"><h4>pass@k</h4><p>At least <strong>one</strong> success in k tries. Rises toward 100% as k grows. Use when one success is enough.</p></div>
+    <div class="card-sm"><h4>pass^k</h4><p><strong>Every</strong> one of k tries succeeds. Falls toward 0% as k grows. Use when the skill must be reliable every single time.</p></div>
+  </div>
+
+  <h3>Try it — drag the sliders</h3>
+  <div class="card">
+    <div class="slider-row">
+      <div class="slider-label"><span>per-trial success rate (p)</span><span id="pval">75%</span></div>
+      <input type="range" id="pslider" min="1" max="99" value="75" oninput="updatePassK()">
+    </div>
+    <div class="slider-row" style="margin-bottom:0;">
+      <div class="slider-label"><span>number of trials (k)</span><span id="kval">3</span></div>
+      <input type="range" id="kslider" min="1" max="10" value="3" oninput="updatePassK()">
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">pass@k — at least one success</div><div class="stat-value" id="passatk">95.3%</div></div>
+      <div class="stat-card k"><div class="stat-label">pass^k — all k succeed</div><div class="stat-value" id="passhatk">42.2%</div></div>
+    </div>
+  </div>
+
+  <h2>Reading</h2>
+  <p class="section-hint" style="margin-top:-0.5rem; margin-bottom:0.75rem;">Open the link first, then check it off.</p>
+  <div class="read-check" id="rc1a" onclick="toggleRead('rc1a')">
+    <div class="box" id="rc1a-box">✓</div>
+    <div>
+      <div style="font-weight:500;font-size:14px;">Evaluating Large Language Models Trained on Code (Chen et al.)</div>
+      <div style="font-size:12px; color:var(--text-3); margin-top:2px;">Focus on: Section 2.1 — where pass@k is defined, and why it beats simple match-based scoring</div>
+    </div>
+    <a href="https://arxiv.org/abs/2107.03374" target="_blank" style="margin-left:auto; font-size:12px; color:var(--accent-text); text-decoration:none; white-space:nowrap;" onclick="event.stopPropagation(); markOpened('rc1a')">Open ↗</a>
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q1"></div>
+
+  <div class="nav-buttons">
+    <button class="btn" onclick="goTo(0)">← Back</button>
+    <button class="btn btn-primary" id="next-1" onclick="goTo(2)">Next: Grading methods →</button>
+  </div>
+</div>
+
+<!-- 2: Grading methods -->
+<div class="section" id="s2">
+  <div class="section-tag">Foundations · 3 of 3</div>
+  <h1>Grading methods — code, model, or human</h1>
+  <p class="subtitle">"Manual vs. automated" is the beginner version. Real eval suites mix three kinds of graders, each with a different failure mode.</p>
+
+  <p style="font-size:13px; color:var(--text-3);">Click each card to flip it.</p>
+  <div class="flip-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-card-inner">
+        <div class="flip-face flip-front" style="border-top:3px solid var(--accent);"><h4>Code-based</h4><p>Click for pros/cons</p></div>
+        <div class="flip-face flip-back"><p>Regex, unit tests, static analysis. Fast, cheap, objective. Brittle to valid variation it wasn't written for.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-card-inner">
+        <div class="flip-face flip-front" style="border-top:3px solid var(--teal);"><h4>Model-based</h4><p>Click for pros/cons</p></div>
+        <div class="flip-face flip-back"><p>Rubric scoring, pairwise comparison. Flexible, scales to open-ended output. Needs calibration against humans.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-card-inner">
+        <div class="flip-face flip-front" style="border-top:3px solid var(--coral);"><h4>Human</h4><p>Click for pros/cons</p></div>
+        <div class="flip-face flip-back"><p>SME review, crowdsourced judgment. The gold standard. Doesn't scale, expensive, slow.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Grade the outcome, not the exact steps</strong>
+    Agents often find valid paths you didn't anticipate. Checking whether the right thing happened is usually more robust than checking whether it happened in the exact sequence you expected.
+  </div>
+
+  <h2>Sort each method into its grader type</h2>
+  <div id="match-rows-2">
+    <div class="match-row">
+      <div class="match-term">Regex / exact string match</div>
+      <select class="match-select" data-answer="code" onchange="checkMatch(this,'match-result-2')">
+        <option value="">— choose —</option><option value="code">Code-based</option><option value="model">Model-based</option><option value="human">Human</option>
+      </select>
+    </div>
+    <div class="match-row">
+      <div class="match-term">Rubric-based scoring by a model</div>
+      <select class="match-select" data-answer="model" onchange="checkMatch(this,'match-result-2')">
+        <option value="">— choose —</option><option value="code">Code-based</option><option value="model">Model-based</option><option value="human">Human</option>
+      </select>
+    </div>
+    <div class="match-row">
+      <div class="match-term">Subject-matter-expert review</div>
+      <select class="match-select" data-answer="human" onchange="checkMatch(this,'match-result-2')">
+        <option value="">— choose —</option><option value="code">Code-based</option><option value="model">Model-based</option><option value="human">Human</option>
+      </select>
+    </div>
+    <div class="match-row">
+      <div class="match-term">Pairwise comparison (model prefers A or B)</div>
+      <select class="match-select" data-answer="model" onchange="checkMatch(this,'match-result-2')">
+        <option value="">— choose —</option><option value="code">Code-based</option><option value="model">Model-based</option><option value="human">Human</option>
+      </select>
+    </div>
+    <div class="match-row">
+      <div class="match-term">Unit tests (pass-to-pass / fail-to-pass)</div>
+      <select class="match-select" data-answer="code" onchange="checkMatch(this,'match-result-2')">
+        <option value="">— choose —</option><option value="code">Code-based</option><option value="model">Model-based</option><option value="human">Human</option>
+      </select>
+    </div>
+    <div class="match-row">
+      <div class="match-term">Crowdsourced judgment</div>
+      <select class="match-select" data-answer="human" onchange="checkMatch(this,'match-result-2')">
+        <option value="">— choose —</option><option value="code">Code-based</option><option value="model">Model-based</option><option value="human">Human</option>
+      </select>
+    </div>
+  </div>
+  <div id="match-result-2" style="display:none; margin-top:0.75rem;" class="callout callout-tip">All correct! You can tell the three kinds of grader apart.</div>
+
+  <h2>Reading</h2>
+  <p class="section-hint" style="margin-top:-0.5rem; margin-bottom:0.75rem;">Open the link first, then check it off.</p>
+  <div class="read-check" id="rc2a" onclick="toggleRead('rc2a')">
+    <div class="box" id="rc2a-box">✓</div>
+    <div>
+      <div style="font-weight:500;font-size:14px;">OpenAI Evals — framework README</div>
+      <div style="font-size:12px; color:var(--text-3); margin-top:2px;">Focus on: the difference between exact-match, model-graded, and custom eval templates</div>
+    </div>
+    <a href="https://github.com/openai/evals" target="_blank" style="margin-left:auto; font-size:12px; color:var(--accent-text); text-decoration:none; white-space:nowrap;" onclick="event.stopPropagation(); markOpened('rc2a')">Open ↗</a>
+  </div>
+
+  <div class="nav-buttons">
+    <button class="btn" onclick="goTo(1)">← Back</button>
+    <button class="btn btn-primary" id="next-2" onclick="goTo(3)">Next: Deterministic checks →</button>
+  </div>
+</div>
+
+<!-- 3: Deterministic checks -->
+<div class="section" id="s3">
+  <div class="section-tag">Deep Dive · 1 of 3</div>
+  <h1>Deterministic checks</h1>
+  <p class="subtitle">When a check has a concrete, computable answer, use it — it removes an entire category of grading mistake.</p>
+
+  <p>Deterministic evals are for exactly the things that don't need judgment: is a turn cap being upheld, does a required field exist, does a number fall in range. Reach for these whenever you can — LLMs can make mistakes, and it's more reliable to compute an answer than to ask a model to judge one.</p>
+
+  <pre><span class="k">def</span> check_turn_cap(transcript, max_turns=<span class="n">5</span>):
+    <span class="k">return</span> len(transcript) &lt;= max_turns</pre>
+
+  <p>No ambiguity, no judgment call — just count and compare. Click each transcript below to run the check.</p>
+
+  <div class="flip-grid" id="s3-flips">
+    <div class="flip-card" data-flip="chk0" onclick="flipAndTrack(this,'chk0',3)">
+      <div class="flip-card-inner">
+        <div class="flip-face flip-front"><div style="font-size:12px; color:var(--text-3); margin-bottom:6px;">4-turn transcript</div><code style="font-size:11.5px; background:none; padding:0;">check_turn_cap(t, max_turns=5)</code></div>
+        <div class="flip-face flip-back verdict-good"><p>✓ True — 4 ≤ 5, within cap</p></div>
+      </div>
+    </div>
+    <div class="flip-card" data-flip="chk1" onclick="flipAndTrack(this,'chk1',3)">
+      <div class="flip-card-inner">
+        <div class="flip-face flip-front"><div style="font-size:12px; color:var(--text-3); margin-bottom:6px;">5-turn transcript</div><code style="font-size:11.5px; background:none; padding:0;">check_turn_cap(t, max_turns=5)</code></div>
+        <div class="flip-face flip-back verdict-good"><p>✓ True — 5 ≤ 5. Boundary case: &lt;= includes the cap itself.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" data-flip="chk2" onclick="flipAndTrack(this,'chk2',3)">
+      <div class="flip-card-inner">
+        <div class="flip-face flip-front"><div style="font-size:12px; color:var(--text-3); margin-bottom:6px;">7-turn transcript</div><code style="font-size:11.5px; background:none; padding:0;">check_turn_cap(t, max_turns=5)</code></div>
+        <div class="flip-face flip-back verdict-bad"><p>✗ False — 7 &gt; 5, exceeded the cap by 2 turns</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-tip">
+    <strong>Rule of thumb</strong>
+    If you can write the check as code without a model in the loop, do that first. Save LLM-as-a-judge for the things that genuinely need judgment.
+  </div>
+
+  <h2>Reading</h2>
+  <p class="section-hint" style="margin-top:-0.5rem; margin-bottom:0.75rem;">Open the link first, then check it off.</p>
+  <div class="read-check" id="rc3a" onclick="toggleRead('rc3a')">
+    <div class="box" id="rc3a-box">✓</div>
+    <div>
+      <div style="font-weight:500;font-size:14px;">Demystifying Evals for AI Agents (revisit)</div>
+      <div style="font-size:12px; color:var(--text-3); margin-top:2px;">Focus on: the "graders" section specifically — how code-based checks are structured and combined with others</div>
+    </div>
+    <a href="https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents" target="_blank" style="margin-left:auto; font-size:12px; color:var(--accent-text); text-decoration:none; white-space:nowrap;" onclick="event.stopPropagation(); markOpened('rc3a')">Open ↗</a>
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q3"></div>
+
+  <div class="nav-buttons">
+    <button class="btn" onclick="goTo(2)">← Back</button>
+    <button class="btn btn-primary" id="next-3" onclick="goTo(4)">Next: LLM-as-a-judge →</button>
+  </div>
+</div>
+
+<!-- 4: LLM-as-a-judge -->
+<div class="section" id="s4">
+  <div class="section-tag">Deep Dive · 2 of 3</div>
+  <h1>LLM-as-a-judge</h1>
+  <p class="subtitle">Using a model to score outputs against a rubric instead of a human grading every run. Powerful — and easy to trust more than it deserves.</p>
+
+  <h2>Why it's worth using</h2>
+  <p>It scales to many test cases and iterations, and can be more consistent than ad hoc human grading. It's the same "evaluation dimensions" thinking from prompt rubrics, now automated.</p>
+
+  <h2>Two ways to run it</h2>
+  <div class="card-grid" style="grid-template-columns:1fr 1fr;">
+    <div class="card-sm"><h4>On a transcript</h4><p>Grade a recorded run after the fact — cheaper, repeatable, good for regression checks.</p></div>
+    <div class="card-sm"><h4>In a live simulation</h4><p>Grade the skill as it runs, sometimes interacting with it — closer to production, more expensive.</p></div>
+  </div>
+
+  <div class="callout callout-warn">
+    <strong>Failure modes to watch for</strong>
+    Judge bias (favors verbose, confident-sounding answers over correct ones) · vague rubrics that produce inconsistent scores · the judge model itself needing validation against human judgment.
+  </div>
+
+  <h2>Mitigations that actually help</h2>
+  <ul>
+    <li>Give the judge an explicit <strong>"Unknown"</strong> option — reduces pressure to invent a confident-sounding verdict</li>
+    <li>Grade <strong>one dimension per call</strong> rather than asking one judge prompt to score everything at once</li>
+    <li>Recalibrate against your own human read <strong>on a cadence</strong> — not just once, since judges drift</li>
+  </ul>
+
+  <h3>Spot the difference — which rubric would you trust more?</h3>
+  <p style="font-size:14px; color:var(--text-2);">Click each card to see how it actually performs as a judge prompt.</p>
+
+  <div class="flip-grid" style="grid-template-columns:1fr 1fr;" id="s4-flips">
+    <div class="flip-card" data-flip="rubric-verbose" onclick="flipAndTrack(this,'rubric-verbose',4)" style="min-height:190px;">
+      <div class="flip-card-inner" style="min-height:190px;">
+        <div class="flip-face flip-front">
+          <div style="font-size:11px; font-weight:500; color:var(--text-3); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;">Verbose rubric</div>
+          <p style="font-size:12.5px; color:var(--text-2); margin:0;">"Please carefully read the response and think about whether it seems like a good, helpful, high-quality answer that a knowledgeable person would be satisfied with, considering the overall tone and thoroughness."</p>
+        </div>
+        <div class="flip-face flip-back verdict-bad"><p>❌ No concrete criteria, no scale, no definition of "good." Two runs of this judge on the same output can land on different scores — and it's exactly the kind of prompt that lets verbosity pass for quality.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" data-flip="rubric-concise" onclick="flipAndTrack(this,'rubric-concise',4)" style="min-height:190px;">
+      <div class="flip-card-inner" style="min-height:190px;">
+        <div class="flip-face flip-front">
+          <div style="font-size:11px; font-weight:500; color:var(--text-3); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;">Concise rubric</div>
+          <p style="font-size:12.5px; color:var(--text-2); margin:0;">"Score groundedness 1–5: does every number in the response trace to a value in the transcript? 5 = all do. 1 = none do. If you can't tell, answer Unknown."</p>
+        </div>
+        <div class="flip-face flip-back verdict-good"><p>✓ One dimension, a concrete check ("traces to a value"), defined endpoints, and an escape hatch. Two runs are far more likely to agree.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>The pattern to notice</strong>
+    This is the same lesson as concise prompting generally: specificity beats volume. A longer rubric isn't a more careful one — it's usually a vaguer one wearing more words.
+  </div>
+
+  <h2>Reading</h2>
+  <p class="section-hint" style="margin-top:-0.5rem; margin-bottom:0.75rem;">Open the link first, then check it off.</p>
+  <div class="read-check" id="rc4a" onclick="toggleRead('rc4a')">
+    <div class="box" id="rc4a-box">✓</div>
+    <div>
+      <div style="font-weight:500;font-size:14px;">Building Evals (Anthropic Cookbook)</div>
+      <div style="font-size:12px; color:var(--text-3); margin-top:2px;">Focus on: how a model-graded eval is set up alongside a code-based one, and where each fits</div>
+    </div>
+    <a href="https://platform.claude.com/cookbook/misc-building-evals" target="_blank" style="margin-left:auto; font-size:12px; color:var(--accent-text); text-decoration:none; white-space:nowrap;" onclick="event.stopPropagation(); markOpened('rc4a')">Open ↗</a>
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q4"></div>
+
+  <div class="nav-buttons">
+    <button class="btn" onclick="goTo(3)">← Back</button>
+    <button class="btn btn-primary" id="next-4" onclick="goTo(5)">Next: GEPA / optimizer →</button>
+  </div>
+</div>
+
+<!-- 5: GEPA -->
+<div class="section" id="s5">
+  <div class="section-tag">Deep Dive · 3 of 3</div>
+  <h1>GEPA — automating the rewrite loop</h1>
+  <p class="subtitle">Evaluations and judge scores aren't the end goal — they're the signal an optimizer improves against.</p>
+
+  <p>GEPA (reflective prompt evolution) improves a skill's instructions automatically: it reads a failed trial's transcript, reflects on <em>why</em> it failed in plain language, and rewrites the instructions — instead of a human manually tuning the prompt by hand each time.</p>
+
+  <div class="card-grid" style="grid-template-columns:1fr 1fr;">
+    <div class="card-sm"><div class="icon">⚡</div><h4>vs. reinforcement learning (GRPO)</h4><p>Up to <strong>35× fewer rollouts</strong> for a comparable or better result.</p></div>
+    <div class="card-sm"><div class="icon">📈</div><h4>vs. the prior best optimizer (MIPROv2)</h4><p><strong>10–14% higher</strong> scores in the paper's own benchmarks.</p></div>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Model quality matters unevenly</strong>
+    The <em>reflection</em> model should be strong — it's doing the real diagnostic reasoning. The optimizer loop and the judge scoring failed attempts can run on cheaper models.
+  </div>
+
+  <h2>Why GEPA keeps more than one "best" prompt</h2>
+  <p>Different instruction variants are often strong on different subsets of cases. Picking one "best average" quietly gives up whatever that variant is weak on.</p>
+
+  <table class="pareto-table">
+    <tr><th></th><th>case 1</th><th>case 2</th><th>case 3</th><th>case 4</th></tr>
+    <tr><td>Variant A</td><td class="pareto-win">✓</td><td class="pareto-win">✓</td><td class="pareto-lose">✗</td><td class="pareto-lose">✗</td></tr>
+    <tr><td>Variant B</td><td class="pareto-lose">✗</td><td class="pareto-lose">✗</td><td class="pareto-win">✓</td><td class="pareto-win">✓</td></tr>
+  </table>
+  <p style="font-size:13px;">GEPA keeps both — this is the <strong>Pareto frontier</strong> — and can graft B's strength onto A rather than throwing either away.</p>
+
+  <h3>Spot the difference — which instruction actually gets followed?</h3>
+  <div class="flip-grid" style="grid-template-columns:1fr 1fr;" id="s5-flips">
+    <div class="flip-card" data-flip="instr-verbose" onclick="flipAndTrack(this,'instr-verbose',5)" style="min-height:180px;">
+      <div class="flip-card-inner" style="min-height:180px;">
+        <div class="flip-face flip-front">
+          <div style="font-size:11px; font-weight:500; color:var(--text-3); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;">Original (failing)</div>
+          <p style="font-size:12.5px; color:var(--text-2); margin:0;">"Please be sure to take into account all of the various dietary needs and preferences that a traveler might have when constructing their itinerary."</p>
+        </div>
+        <div class="flip-face flip-back verdict-bad"><p>❌ "Various dietary needs" never names anything. The skill handled vegetarian requests and silently dropped gluten-free — nothing here told it gluten-free was a thing to check.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" data-flip="instr-concise" onclick="flipAndTrack(this,'instr-concise',5)" style="min-height:180px;">
+      <div class="flip-card-inner" style="min-height:180px;">
+        <div class="flip-face flip-front">
+          <div style="font-size:11px; font-weight:500; color:var(--text-3); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;">GEPA's rewrite</div>
+          <p style="font-size:12.5px; color:var(--text-2); margin:0;">"Flag vegetarian and gluten-free options for every day of the itinerary."</p>
+        </div>
+        <div class="flip-face flip-back verdict-good"><p>✓ Shorter, and it actually names the constraint that was silently failing. Score on the failing case: 2/4 → 4/4.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Required reading</h2>
+  <p class="section-hint" style="margin-top:-0.5rem; margin-bottom:0.75rem;">Open the link first, then check it off.</p>
+  <div class="read-check" id="rc5a" onclick="toggleRead('rc5a')">
+    <div class="box" id="rc5a-box">✓</div>
+    <div><div style="font-weight:500;font-size:14px;">dspy.GEPA — implementation docs</div><div style="font-size:12px; color:var(--text-3); margin-top:2px;">Where you'll actually run GEPA, capped at 2 rounds, in the lab</div></div>
+    <a href="https://dspy.ai/api/optimizers/GEPA/overview/" target="_blank" style="margin-left:auto; font-size:12px; color:var(--accent-text); text-decoration:none; white-space:nowrap;" onclick="event.stopPropagation(); markOpened('rc5a')">Open ↗</a>
+  </div>
+  <div class="callout callout-info" style="margin-top:10px;">
+    <strong>Instructor note</strong>
+    The docs above are the required reading. If you'd rather assign the primary source instead, swap the requirement for the paper below — don't assign both.
+  </div>
+  <div class="card" style="margin-top:10px; opacity:0.85;">
+    <div style="font-weight:500;font-size:14px;">Optional (or substitute) — GEPA: Reflective Prompt Evolution (paper)</div>
+    <div style="font-size:12px; color:var(--text-3); margin-top:2px; margin-bottom:8px;">Longer, primary-source read. Covers the Pareto-frontier mechanism and the GRPO/MIPROv2 comparisons in full.</div>
+    <a href="https://arxiv.org/abs/2507.19457" target="_blank" style="font-size:12px; color:var(--accent-text); text-decoration:none;">Open ↗</a>
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q5"></div>
+
+  <div class="nav-buttons">
+    <button class="btn" onclick="goTo(4)">← Back</button>
+    <button class="btn btn-primary" id="next-5" onclick="goTo(6)">Next: Observability →</button>
+  </div>
+</div>
+
+<!-- 6: Observability -->
+<div class="section" id="s6">
+  <div class="section-tag">Best Practices · 1 of 2</div>
+  <h1>Observability, tracing & open-source tooling</h1>
+  <p class="subtitle">When an eval fails, tracing is how you find out where — instead of guessing. You also don't have to build any of this from scratch.</p>
+
+  <p>Observability means seeing inside a skill run: which subagent was called, what tool calls happened, latency, token counts — not just the final output. This ties directly to last week's subagents and loops: a loop that never converges, or a subagent that returns bad output, both look identical from the outside unless you can see the steps.</p>
+
+  <h3>Same failed run, two ways of looking at it</h3>
+  <div class="reveal-grid">
+    <div>
+      <div style="font-size:12px; font-weight:500; color:var(--text-3); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;">Basic print logging</div>
+      <div class="card" style="font-size:12px;">
+        <div class="trace-line">[log] subagent: itinerary_builder started</div>
+        <div class="trace-line">[log] tool_call: search_flights → ok</div>
+        <div class="trace-line">[log] tool_call: convert_currency → ok</div>
+        <div class="trace-line">[log] subagent: itinerary_builder finished</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:12px; font-weight:500; color:var(--text-3); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;">Structured trace</div>
+      <div class="card" style="font-size:12px;">
+        <div class="trace-line">subagent: itinerary_builder · 2.4s total</div>
+        <div class="trace-line">tool_call: search_flights · 240ms</div>
+        <div class="trace-flag">⚠ convert_currency · JPY→USD rate from a 14-day-old cache</div>
+        <div class="trace-line">subagent finished, returned itinerary</div>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:13.5px;">Every step "succeeded" in the print log. Only the trace shows <em>which</em> step actually caused the failed budget check downstream — not more data, <strong>attributable</strong> data.</p>
+
+  <h2>Tracing & observability tools</h2>
+  <div class="card-grid">
+    <div class="card-sm"><h4>OpenTelemetry</h4><p>Open standard for traces and spans. Vendor-neutral.</p></div>
+    <div class="card-sm"><h4>Langfuse</h4><p>Open-source (MIT), self-hostable tracing built for LLM apps.</p></div>
+    <div class="card-sm"><h4>Arize Phoenix</h4><p>Source-available observability for LLM apps. Note: Elastic License 2.0, not OSI-approved open source — check this matters for your use case.</p></div>
+    <div class="card-sm"><h4>Braintrust</h4><p>Combines offline eval with production monitoring in one platform.</p></div>
+  </div>
+
+  <h2>Open-source evaluation frameworks</h2>
+  <p style="font-size:14px;">You don't have to hand-roll a harness. These are the ones worth knowing about, each suited to a different shape of eval:</p>
+  <div class="card-grid">
+    <div class="card-sm"><h4>DeepEval</h4><p>Apache-2.0. Pytest-style assertions — write evals as ordinary test functions. Broad metric coverage (G-Eval, agent, multi-turn).</p></div>
+    <div class="card-sm"><h4>Promptfoo</h4><p>MIT. YAML config + CLI — good for prompt regression testing in CI, one file per test suite, includes red-team plugins.</p></div>
+    <div class="card-sm"><h4>Inspect AI</h4><p>MIT, from the UK AI Safety Institute. Python task files — the closest thing to a standard for rigorous model/agent benchmarking.</p></div>
+    <div class="card-sm"><h4>Ragas</h4><p>Apache-2.0. Purpose-built for RAG pipelines — faithfulness, context recall/precision. Worth it if your skill retrieves before it answers.</p></div>
+  </div>
+  <div class="callout callout-info">
+    <strong>Which one for the Week 3 lab</strong>
+    For a first real harness around the trip-planning skill, DeepEval's pytest style maps most directly onto "test case = input + expected behavior + pass/fail condition" — you'll recognize the shape immediately.
+  </div>
+
+  <h2>Reading</h2>
+  <p class="section-hint" style="margin-top:-0.5rem; margin-bottom:0.75rem;">Open the link first, then check it off.</p>
+  <div class="read-check" id="rc6a" onclick="toggleRead('rc6a')">
+    <div class="box" id="rc6a-box">✓</div>
+    <div>
+      <div style="font-weight:500;font-size:14px;">Tracing — OpenAI Agents SDK docs</div>
+      <div style="font-size:12px; color:var(--text-3); margin-top:2px;">Focus on: what gets recorded as a span automatically (model calls, tool calls, handoffs, guardrail checks) and how to view a trace</div>
+    </div>
+    <a href="https://openai.github.io/openai-agents-python/tracing/" target="_blank" style="margin-left:auto; font-size:12px; color:var(--accent-text); text-decoration:none; white-space:nowrap;" onclick="event.stopPropagation(); markOpened('rc6a')">Open ↗</a>
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q6"></div>
+
+  <div class="nav-buttons">
+    <button class="btn" onclick="goTo(5)">← Back</button>
+    <button class="btn btn-primary" id="next-6" onclick="goTo(7)">Next: Watch-outs →</button>
+  </div>
+</div>
+
+<!-- 7: Watch-outs -->
+<div class="section" id="s7">
+  <div class="section-tag">Best Practices · 2 of 2</div>
+  <h1>Things to watch out for</h1>
+  <p class="subtitle">Three habits that quietly undermine everything above, even when each individual step looks correct.</p>
+
+  <div class="card" style="border-left:3px solid var(--danger); margin-bottom:10px;">
+    <h3 style="color:var(--danger); margin-top:0;">Overfitting to your test cases</h3>
+    <p style="font-size:13.5px; margin:0;">Tuning a skill until it passes your specific test cases without actually generalizing. Write test cases from real observed failures, not to make a number go up — and keep a held-out set the optimizer never sees.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--danger); margin-bottom:10px;">
+    <h3 style="color:var(--danger); margin-top:0;">Trusting the judge blindly</h3>
+    <p style="font-size:13.5px; margin:0;">Judges drift and can favor confident, verbose answers over correct ones (§4). Spot-check judge scores against your own read on a regular cadence — not just the first time you write the rubric.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--danger); margin-bottom:10px;">
+    <h3 style="color:var(--danger); margin-top:0;">Ignoring which model you're optimizing for</h3>
+    <p style="font-size:13.5px; margin:0;">Models vary in how well they follow negative framing ("DO NOT…") versus affirmative framing ("Only include…"). The same instruction can score differently depending on the model — test any rewrite across every model you plan to deploy with, not just the one you drafted against.</p>
+  </div>
+
+  <h2>Reading</h2>
+  <p class="section-hint" style="margin-top:-0.5rem; margin-bottom:0.75rem;">Open the link first, then check it off.</p>
+  <div class="read-check" id="rc7a" onclick="toggleRead('rc7a')">
+    <div class="box" id="rc7a-box">✓</div>
+    <div>
+      <div style="font-weight:500;font-size:14px;">Investigating Reward Tampering (Anthropic)</div>
+      <div style="font-size:12px; color:var(--text-3); margin-top:2px;">Focus on: how specification gaming — passing the metric without doing the intended thing — can escalate if left unchecked</div>
+    </div>
+    <a href="https://www.anthropic.com/news/reward-tampering" target="_blank" style="margin-left:auto; font-size:12px; color:var(--accent-text); text-decoration:none; white-space:nowrap;" onclick="event.stopPropagation(); markOpened('rc7a')">Open ↗</a>
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q7"></div>
+
+  <div class="nav-buttons">
+    <button class="btn" onclick="goTo(6)">← Back</button>
+    <button class="btn btn-primary" id="next-7" onclick="goTo(8)">Build a test suite →</button>
+  </div>
+</div>
+
+<!-- 8: Build a test suite -->
+<div class="section" id="s8">
+  <div class="section-tag">Activity</div>
+  <h1>Build your own test suite</h1>
+  <p class="subtitle">Write 4 test cases for the trip-planning skill (or whatever skill you built in Week 2). Each one needs an input and a pass/fail condition concrete enough that someone else could grade it without asking you what you meant.</p>
+
+  <div class="callout callout-info" style="margin-bottom:1.25rem;">
+    <strong>What makes a condition "concrete enough"</strong>
+    "The itinerary looks reasonable" is not checkable. "The itinerary includes exactly 3 days, and every day names at least one vegetarian option" is.
+  </div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
+    <div>
+      <div class="skill-field">
+        <label>Test case 1 — input</label>
+        <textarea id="tc1-in" oninput="updateSuite()" placeholder="e.g. Plan a 3-day Tokyo trip, budget $900, vegetarian options required" style="min-height:60px;"></textarea>
+      </div>
+      <div class="skill-field">
+        <label>Test case 1 — pass/fail condition</label>
+        <textarea id="tc1-cond" oninput="updateSuite()" placeholder="e.g. All 3 days present, every day has a vegetarian option, total ≤ $900" style="min-height:60px;"></textarea>
+      </div>
+      <div class="skill-field">
+        <label>Test case 1 — grading method (from §2)</label>
+        <select id="tc1-grader" onchange="updateSuite()" style="width:100%; padding:8px 12px; border:0.5px solid var(--border-strong); border-radius:8px; font-size:14px; font-family:inherit; color:var(--text); background:var(--surface);">
+          <option value="">— choose —</option>
+          <option value="code">Code-based</option>
+          <option value="model">Model-based (LLM judge)</option>
+          <option value="human">Human review</option>
+        </select>
+      </div>
+      <div class="skill-field">
+        <label>Test case 2 — input</label>
+        <textarea id="tc2-in" oninput="updateSuite()" style="min-height:60px;"></textarea>
+      </div>
+      <div class="skill-field">
+        <label>Test case 2 — pass/fail condition</label>
+        <textarea id="tc2-cond" oninput="updateSuite()" style="min-height:60px;"></textarea>
+      </div>
+      <div class="skill-field">
+        <label>Test case 2 — grading method (from §2)</label>
+        <select id="tc2-grader" onchange="updateSuite()" style="width:100%; padding:8px 12px; border:0.5px solid var(--border-strong); border-radius:8px; font-size:14px; font-family:inherit; color:var(--text); background:var(--surface);">
+          <option value="">— choose —</option>
+          <option value="code">Code-based</option>
+          <option value="model">Model-based (LLM judge)</option>
+          <option value="human">Human review</option>
+        </select>
+      </div>
+      <div class="skill-field">
+        <label>Test case 3 — input (make this one deliberately hard — a capability eval)</label>
+        <textarea id="tc3-in" oninput="updateSuite()" style="min-height:60px;"></textarea>
+      </div>
+      <div class="skill-field">
+        <label>Test case 3 — pass/fail condition</label>
+        <textarea id="tc3-cond" oninput="updateSuite()" style="min-height:60px;"></textarea>
+      </div>
+      <div class="skill-field">
+        <label>Test case 3 — grading method (from §2)</label>
+        <select id="tc3-grader" onchange="updateSuite()" style="width:100%; padding:8px 12px; border:0.5px solid var(--border-strong); border-radius:8px; font-size:14px; font-family:inherit; color:var(--text); background:var(--surface);">
+          <option value="">— choose —</option>
+          <option value="code">Code-based</option>
+          <option value="model">Model-based (LLM judge)</option>
+          <option value="human">Human review</option>
+        </select>
+      </div>
+      <div class="skill-field">
+        <label>Test case 4 — input (a regression case — something it already handles well)</label>
+        <textarea id="tc4-in" oninput="updateSuite()" style="min-height:60px;"></textarea>
+      </div>
+      <div class="skill-field">
+        <label>Test case 4 — pass/fail condition</label>
+        <textarea id="tc4-cond" oninput="updateSuite()" style="min-height:60px;"></textarea>
+      </div>
+      <div class="skill-field">
+        <label>Test case 4 — grading method (from §2)</label>
+        <select id="tc4-grader" onchange="updateSuite()" style="width:100%; padding:8px 12px; border:0.5px solid var(--border-strong); border-radius:8px; font-size:14px; font-family:inherit; color:var(--text); background:var(--surface);">
+          <option value="">— choose —</option>
+          <option value="code">Code-based</option>
+          <option value="model">Model-based (LLM judge)</option>
+          <option value="human">Human review</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:12px; font-weight:500; color:var(--text-3); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.05em;">Live preview — your eval suite</div>
+      <div class="skill-preview" id="suite-preview" style="min-height:300px; font-size:11.5px;">Fill in the fields to see your suite take shape...</div>
+      <div id="suite-validation" style="margin-top:8px; font-size:12px; color:var(--danger);"></div>
+    </div>
+  </div>
+
+  <div style="margin-top:1.25rem; display:flex; gap:10px; align-items:center;">
+    <button class="btn btn-sm" onclick="checkSuite()">Check my test suite</button>
+    <div id="suite-result" style="font-size:13px;"></div>
+  </div>
+
+  <h2>Reading</h2>
+  <p class="section-hint" style="margin-top:-0.5rem; margin-bottom:0.75rem;">Open the link first, then check it off.</p>
+  <div class="read-check" id="rc8a" onclick="toggleRead('rc8a')">
+    <div class="box" id="rc8a-box">✓</div>
+    <div>
+      <div style="font-weight:500;font-size:14px;">OpenAI Evals — writing your own eval</div>
+      <div style="font-size:12px; color:var(--text-3); margin-top:2px;">Focus on: the practical walkthrough of turning a task into a runnable eval — the same move you're making below</div>
+    </div>
+    <a href="https://github.com/openai/evals/blob/main/docs/build-eval.md" target="_blank" style="margin-left:auto; font-size:12px; color:var(--accent-text); text-decoration:none; white-space:nowrap;" onclick="event.stopPropagation(); markOpened('rc8a')">Open ↗</a>
+  </div>
+
+  <h2 style="margin-top:2rem;">Reflection</h2>
+  <p style="font-size:14px; color:var(--text-2);">Which of your 4 test cases would be hardest for the skill to pass, and why?</p>
+  <textarea id="s8-reflect" placeholder="Think about: what makes it hard — ambiguity in the input, a constraint the skill might not check, or something that needs multiple tool calls to get right?" style="min-height:90px;"></textarea>
+
+  <div class="nav-buttons">
+    <button class="btn" onclick="goTo(7)">← Back</button>
+    <button class="btn btn-primary" id="next-8" onclick="goTo(9)">Final checklist →</button>
+  </div>
+</div>
+
+<!-- 9: Checklist -->
+<div class="section" id="s9">
+  <div class="section-tag">Wrap-up</div>
+  <h1>Checklist & reflection</h1>
+  <p class="subtitle">A reference checklist for any eval process you build — pull this up before you trust a score.</p>
+
+  <div id="instructor-panel" style="display:none;" class="card"></div>
+
+  <div class="card">
+    <h3 style="margin-top:0; margin-bottom:1rem;">Core eval quality</h3>
+    <div id="checklist-core"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0; margin-bottom:1rem;">Before trusting a judge or an optimization pass</h3>
+    <div id="checklist-lab"></div>
+  </div>
+
+  <div id="checklist-done" style="display:none; margin-top:1rem;" class="callout callout-tip">✓ All checked — you know what a trustworthy eval process looks like.</div>
+
+  <h2>Final reflection</h2>
+  <p style="font-size:14px;">Which single addition to your eval process would most improve your confidence in your skill right now — a new test case, a deterministic check, better judge calibration, or a trace review? Why?</p>
+  <textarea id="s9-reflect" placeholder="There's no single right answer — this is about noticing where your own biggest blind spot currently is." style="min-height:90px;" oninput="onFinalReflectInput()"></textarea>
+  <div class="section-hint" id="submit-status"></div>
+
+  <h2>Resources</h2>
+  <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:0.5rem;">
+    <a class="ext-link" href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank">Building Effective Agents <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg></a>
+    <a class="ext-link" href="https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents" target="_blank">Demystifying Evals <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg></a>
+    <a class="ext-link" href="https://arxiv.org/abs/2507.19457" target="_blank">GEPA Paper <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg></a>
+    <a class="ext-link" href="https://dspy.ai/api/optimizers/GEPA/overview/" target="_blank">dspy.GEPA Docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg></a>
+    <a class="ext-link" href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview" target="_blank">Agent Skills Overview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg></a>
+  </div>
+
+  <h2>Submit your completion</h2>
+  <div class="card">
+    <p style="font-size:13.5px; margin-bottom:1rem;">This generates a submission file from what you actually did in this page — your section completion, quiz results, and both reflections in full — plus an integrity hash so a submission that's edited after generating won't quietly pass as untouched. Submit the downloaded file (or the pasted text) wherever your instructor collects prelab submissions.</p>
+    <div class="skill-field">
+      <label>Your name (goes on the submission)</label>
+      <input type="text" id="submit-name" placeholder="Jane Doe">
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="generateSubmission()">Generate my submission</button>
+    <div id="submit-generate-status" style="margin-top:10px; font-size:13px;"></div>
+    <textarea id="submit-preview" style="display:none; margin-top:12px; min-height:220px; font-family:var(--mono); font-size:11.5px;" readonly></textarea>
+    <button class="btn btn-sm" id="submit-copy-btn" style="display:none; margin-top:8px;" onclick="copySubmission()">Copy to clipboard</button>
+  </div>
+
+  <div class="nav-buttons">
+    <button class="btn" onclick="goTo(8)">← Back</button>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>const SECTIONS = 10;
+let sectionDone = new Set();
+let unlockedUpTo = 0; // sections 0..unlockedUpTo are reachable
+const quizCorrect = {}; // quiz id -> bool
+const flipsNeeded = { 3: ['chk0','chk1','chk2'], 4: ['rubric-verbose','rubric-concise'], 5: ['instr-verbose','instr-concise'] };
+const flipsSeen = { 3: new Set(), 4: new Set(), 5: new Set() };
+const quizToSection = { q1: 1, q3: 3, q4: 4, q5: 5, q6: 6, q7: 7 };
+
+const quizzes = {
+  q1: {
+    q: "A task passes 3 of 10 independent trials (p = 30%). You now allow k = 5 attempts and only need one to succeed. What is that, and roughly how does it compare to 30%?",
+    opts: ["pass^k — lower than 30%", "pass@k — higher than 30%", "pass@k — exactly 30%, k doesn't matter", "pass^k — exactly 30%"],
+    ans: 1,
+    exp: "That's pass@k — at least one success in k tries. With p=0.3 and k=5, pass@k = 1-(1-0.3)^5 ≈ 83%, well above the raw 30% per-trial rate."
+  },
+  q3: {
+    q: "Why prefer a deterministic check over an LLM judge for something like a turn cap?",
+    opts: ["It's objective and computable — no risk of a hallucinated grade", "It's more flexible for open-ended output", "Judges are incapable of counting"],
+    ans: 0,
+    exp: "There's no judgment call to make — just count and compare. Introducing a model adds cost and a new failure mode (hallucinated grading) for zero benefit here."
+  },
+  q4: {
+    q: "What's one concrete way to reduce judge hallucination, beyond just writing a clearer rubric?",
+    opts: ["Always use the most expensive available model as the judge", "Give the judge an explicit \"Unknown\" option, and grade one dimension per call", "Never show the judge the original input, only the output"],
+    ans: 1,
+    exp: "An escape hatch reduces pressure to invent a confident verdict, and narrower, single-dimension calls keep each judgment simpler and more consistent."
+  },
+  q5: {
+    q: "Why does GEPA keep several prompt variants instead of collapsing to the single best-scoring one?",
+    opts: ["To save compute during rollouts", "Different variants are often strong on different subsets of cases — keeping several avoids a local optimum", "It's a limitation the authors are still fixing"],
+    ans: 1,
+    exp: "This is the Pareto frontier: Variant A being weak exactly where B is strong is common. GEPA keeps both and can combine their strengths instead of picking one narrow \"winner.\""
+  },
+  q6: {
+    q: "In the observability example above, what did the structured trace catch that the print log didn't?",
+    opts: ["Nothing — they contained the same information", "That the currency conversion used a 14-day-old cached rate", "That a tool call was skipped entirely"],
+    ans: 1,
+    exp: "Every step \"succeeded\" in the print log. The trace was needed to see that one step returned a stale, incorrect result — which is what actually broke the downstream budget check."
+  },
+  q7: {
+    q: "Your skill's eval score jumped from 60% to 95% after one optimization pass, using only the 8 test cases you wrote yourself. What should you check before celebrating?",
+    opts: ["Nothing — a higher score is always good news", "Whether it still performs well on cases outside your 8 test cases — this could be overfitting", "Whether the judge model is expensive enough"],
+    ans: 1,
+    exp: "A big jump on your own test set, with nothing held out, is exactly the overfitting risk from this section. Check performance on cases the optimizer never saw before trusting the number."
+  }
+};
+
+function buildQuiz(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const data = quizzes[id];
+  if (!data) return;
+  let html = `<div style="margin-bottom:10px; font-size:14px; font-weight:500; color:var(--text);">${data.q}</div>`;
+  data.opts.forEach((o, i) => {
+    html += `<div class="quiz-option" id="${id}-opt${i}" onclick="answerQuiz('${id}',${i})"><div class="letter">${'ABCD'[i]}</div>${o}</div>`;
+  });
+  html += `<div class="quiz-feedback" id="${id}-fb"></div>`;
+  el.innerHTML = html;
+}
+
+function answerQuiz(id, chosen) {
+  const data = quizzes[id];
+  const fb = document.getElementById(id+'-fb');
+  data.opts.forEach((_, i) => {
+    const el = document.getElementById(id+'-opt'+i);
+    el.classList.remove('selected','correct','wrong');
+    if (i === data.ans) el.classList.add('correct');
+    else if (i === chosen && chosen !== data.ans) el.classList.add('wrong');
+  });
+  fb.classList.add('show');
+  fb.className = 'quiz-feedback show ' + (chosen===data.ans?'correct':'wrong');
+  fb.textContent = (chosen===data.ans ? '✓ Correct! ' : '✗ Not quite. ') + data.exp;
+  quizCorrect[id] = (chosen === data.ans);
+  const sec = quizToSection[id];
+  if (sec !== undefined) markSectionRequirement(sec, 'quiz');
+}
+
+['q1','q3','q4','q5','q6','q7'].forEach(buildQuiz);
+
+// ---------- gating engine ----------
+// each section's "requirements" are satisfied flags; markSectionRequirement flips one on,
+// then we check if the section's full requirement set is met.
+const reqState = {}; // e.g. reqState['3-quiz']=true, reqState['3-flips']=true
+
+function requirementsFor(n) {
+  if (n === 0) return ['match','read'];
+  if (n === 1) return ['quiz','read'];
+  if (n === 2) return ['match','read'];
+  if (n === 3) return ['quiz','flips','read'];
+  if (n === 4) return ['quiz','flips','read'];
+  if (n === 5) return ['quiz','flips','read'];
+  if (n === 6) return ['quiz','read'];
+  if (n === 7) return ['quiz','read'];
+  if (n === 8) return ['suite','read'];
+  return [];
+}
+
+// which read-check ids belong to which section, and whether each has been
+// opened (link clicked) before its checkbox is allowed to be ticked
+const readChecksNeeded = {
+  0: ['rc0a'],
+  1: ['rc1a'],
+  2: ['rc2a'],
+  3: ['rc3a'],
+  4: ['rc4a'],
+  5: ['rc5a'],
+  6: ['rc6a'],
+  7: ['rc7a'],
+  8: ['rc8a']
+};
+const readSectionOf = {}; // reverse lookup: 'rc0a' -> 0
+Object.entries(readChecksNeeded).forEach(([sec, ids]) => ids.forEach(id => readSectionOf[id] = parseInt(sec)));
+const openedLinks = new Set();
+
+function markOpened(id) {
+  openedLinks.add(id);
+}
+
+function markSectionRequirement(n, kind) {
+  reqState[n+'-'+kind] = true;
+  const need = requirementsFor(n);
+  const done = need.every(k => reqState[n+'-'+k]);
+  if (done) markDone(n);
+}
+
+function markDone(n) {
+  if (sectionDone.has(n)) return;
+  sectionDone.add(n);
+  const navDot = document.querySelector('.nav-item[data-section="'+n+'"]');
+  if (navDot) navDot.classList.add('done');
+  const nextBtn = document.getElementById('next-'+n);
+  if (nextBtn) nextBtn.removeAttribute('disabled');
+  // advance the unlock frontier past any contiguous run of completed sections
+  while (sectionDone.has(unlockedUpTo)) unlockedUpTo++;
+  updateProgress();
+  syncProgress();
+  if (typeof saveProgress === 'function') saveProgress(n);
+}
+
+function goTo(n) {
+  if (n > unlockedUpTo) {
+    const item = document.querySelector('.nav-item[data-section="'+n+'"]');
+    if (item) { item.classList.add('shake'); setTimeout(() => item.classList.remove('shake'), 350); }
+    return;
+  }
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.remove('active');
+    if (parseInt(el.dataset.section) === n) el.classList.add('active');
+  });
+  window.scrollTo(0,0);
+}
+
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.addEventListener('click', () => goTo(parseInt(el.dataset.section)));
+});
+
+function updateProgress() {
+  const pct = Math.round((sectionDone.size / SECTIONS) * 100);
+  document.getElementById('prog-pct').textContent = pct + '%';
+  document.getElementById('prog-fill').style.width = pct + '%';
+}
+
+// disable every Next button up front; markDone() re-enables as sections are completed
+document.querySelectorAll('.nav-buttons .btn-primary[id^="next-"]').forEach(b => b.setAttribute('disabled', 'true'));
+
+function toggleRead(id) {
+  const el = document.getElementById(id);
+  const alreadyChecked = el.classList.contains('checked');
+  if (!alreadyChecked && !openedLinks.has(id)) {
+    // hasn't opened the actual reading yet — nudge instead of allowing a free check
+    el.classList.add('shake');
+    setTimeout(() => el.classList.remove('shake'), 350);
+    return;
+  }
+  el.classList.toggle('checked');
+  const sec = readSectionOf[id];
+  if (sec === undefined) return;
+  const needed = readChecksNeeded[sec];
+  const allChecked = needed.every(rid => document.getElementById(rid).classList.contains('checked'));
+  if (allChecked) markSectionRequirement(sec, 'read');
+}
+
+function checkMatch(sel, resultId) {
+  const correct = sel.dataset.answer;
+  sel.classList.remove('correct','wrong');
+  if (sel.value === '') return;
+  sel.classList.add(sel.value === correct ? 'correct' : 'wrong');
+  const container = sel.closest('div[id^="match-rows"]');
+  const selects = container.querySelectorAll('.match-select');
+  const allCorrect = [...selects].every(s => s.value === s.dataset.answer);
+  document.getElementById(resultId).style.display = allCorrect ? 'block' : 'none';
+  if (allCorrect) {
+    const sec = resultId === 'match-result-0' ? 0 : (resultId === 'match-result-2' ? 2 : null);
+    if (sec !== null) markSectionRequirement(sec, 'match');
+  }
+}
+
+function flipAndTrack(cardEl, flipId, section) {
+  cardEl.classList.toggle('flipped');
+  flipsSeen[section].add(flipId);
+  if (flipsNeeded[section].every(id => flipsSeen[section].has(id))) {
+    markSectionRequirement(section, 'flips');
+  }
+}
+
+function updatePassK() {
+  const p = parseInt(document.getElementById('pslider').value,10) / 100;
+  const k = parseInt(document.getElementById('kslider').value,10);
+  document.getElementById('pval').textContent = Math.round(p*100) + '%';
+  document.getElementById('kval').textContent = k;
+  const atK = (1 - Math.pow(1-p, k)) * 100;
+  const hatK = Math.pow(p, k) * 100;
+  document.getElementById('passatk').textContent = atK.toFixed(1) + '%';
+  document.getElementById('passhatk').textContent = hatK.toFixed(1) + '%';
+}
+updatePassK();
+
+function updateSuite() {
+  const rows = [1,2,3,4].map(i => ({
+    input: document.getElementById('tc'+i+'-in').value.trim(),
+    cond: document.getElementById('tc'+i+'-cond').value.trim(),
+    grader: document.getElementById('tc'+i+'-grader').value
+  }));
+  const preview = document.getElementById('suite-preview');
+  let html = '';
+  const graderLabel = { code: 'code-based', model: 'model-based', human: 'human review', '': '(not chosen)' };
+  rows.forEach((r,i) => {
+    html += `<span class="c">## Test case ${i+1}</span>\n`;
+    html += `<span class="y">input:</span> ${r.input || '(empty)'}\n`;
+    html += `<span class="y">pass_if:</span> ${r.cond || '(empty)'}\n`;
+    html += `<span class="y">grader:</span> ${graderLabel[r.grader]}\n\n`;
+  });
+  preview.innerHTML = html;
+}
+['1','2','3','4'].forEach(i => {
+  document.getElementById('tc'+i+'-in').addEventListener('input', updateSuite);
+  document.getElementById('tc'+i+'-cond').addEventListener('input', updateSuite);
+});
+updateSuite();
+
+function checkSuite() {
+  const rows = [1,2,3,4].map(i => ({
+    input: document.getElementById('tc'+i+'-in').value.trim(),
+    cond: document.getElementById('tc'+i+'-cond').value.trim(),
+    grader: document.getElementById('tc'+i+'-grader').value
+  }));
+  const res = document.getElementById('suite-result');
+  let issues = [];
+  rows.forEach((r,i) => {
+    if (!r.input) issues.push(`test case ${i+1} is missing an input`);
+    else if (!r.cond) issues.push(`test case ${i+1} is missing a pass/fail condition`);
+    else if (r.cond.length < 20) issues.push(`test case ${i+1}'s condition looks too short to be checkable`);
+    else if (!/\d|all|every|exactly|at least|under|over|must|only|no more than/i.test(r.cond)) issues.push(`test case ${i+1}'s condition may be too vague — try adding a number or a word like "every"/"exactly"/"at least"`);
+    if (!r.grader) issues.push(`test case ${i+1} needs a grading method picked (§2: code / model / human)`);
+  });
+  const graderCounts = {};
+  rows.forEach(r => { if (r.grader) graderCounts[r.grader] = (graderCounts[r.grader]||0)+1; });
+  if (Object.keys(graderCounts).length === 1 && rows.every(r => r.grader)) {
+    issues.push(`all 4 cases use the same grading method — is that really the best fit for each one, or just the easiest to reach for?`);
+  }
+  if (issues.length === 0) {
+    res.style.color = 'var(--success)';
+    res.textContent = '✓ Looks solid — concrete, checkable conditions, sensible grading methods across all 4 cases.';
+    markSectionRequirement(8, 'suite');
+  } else {
+    res.style.color = 'var(--danger)';
+    res.textContent = 'Fix: ' + issues.join('; ') + '.';
+  }
+}
+
+function buildChecklist(id, items) {
+  const el = document.getElementById(id);
+  el.innerHTML = items.map((item,i) =>
+    `<label class="checklist-item" id="${id}-${i}">
+      <input type="checkbox" onchange="toggleChecklist('${id}-${i}', this.checked); checkAllDone()">
+      ${item}
+    </label>`
+  ).join('');
+}
+
+function toggleChecklist(id, done) {
+  document.getElementById(id).classList.toggle('done', done);
+}
+
+function checkAllDone() {
+  const all = document.querySelectorAll('#s9 input[type=checkbox]');
+  const done = [...all].every(c => c.checked);
+  document.getElementById('checklist-done').style.display = done ? 'block' : 'none';
+  if (done) { sectionDone.add(9); syncProgress(true); }
+}
+
+function onFinalReflectInput() {
+  // lightweight debounce, synced along with any other change
+  clearTimeout(window._reflectTimer);
+  window._reflectTimer = setTimeout(() => syncProgress(), 800);
+}
+
+buildChecklist('checklist-core', [
+  'Suite includes at least one deliberately hard case (capability) and one already-solved case (regression)',
+  'Every test case has a concrete, checkable pass/fail condition — not "looks good"',
+  'At least one check is deterministic (code-based) wherever a computable answer exists',
+  'Outcomes are checked, not just the literal text the skill outputs',
+]);
+buildChecklist('checklist-lab', [
+  'Judge rubric grades one dimension per call and allows an "Unknown" answer',
+  'Judge scores have been spot-checked against a human read at least once',
+  'A held-out set exists that the optimizer never sees, to catch overfitting',
+  'Any rewritten instruction has been tested across every model you plan to deploy with',
+]);
+
+updateProgress();
+
+// ================= real per-student completion tracking =================
+// Uses this environment's `db` + `user` capabilities so a student's progress
+// is a server-side record an instructor can actually see — not just a
+// client-side flag anyone could fake by editing the page. Degrades silently
+// to "local only" (no submission) if these capabilities aren't available
+// (e.g. opened outside the organization, or on a host that doesn't serve them).
+let dbNS = null, userNS = null, myId = null, iAmOwner = false;
+let writeInFlight = false, writeQueued = false;
+
+async function initCloudProgress() {
+  try {
+    dbNS = (window.claude && window.claude.use) ? await window.claude.use('db') : null;
+    userNS = (window.claude && window.claude.use) ? await window.claude.use('user') : null;
+    if (userNS) {
+      myId = await userNS.id();
+      iAmOwner = await userNS.isOwner();
+    }
+  } catch (e) {
+    dbNS = null; userNS = null;
+  }
+  const status = document.getElementById('submit-status');
+  if (status) {
+    if (!dbNS || !myId) status.textContent = 'Progress tracking unavailable in this view — your local progress still works, but nothing is being recorded for your instructor.';
+    else status.textContent = 'Your progress is being recorded as you go.';
+  }
+  if (iAmOwner) renderInstructorDashboard();
+}
+
+async function syncProgress(isFinal) {
+  if (!dbNS || !myId) return;
+  if (writeInFlight) { writeQueued = true; return; }
+  writeInFlight = true;
+  try {
+    const s8 = document.getElementById('s8-reflect');
+    const s9 = document.getElementById('s9-reflect');
+    await dbNS.doc('completions/' + myId).set({
+      sectionsDone: [...sectionDone],
+      quizCorrect: quizCorrect,
+      s8Reflection: s8 ? s8.value.slice(0, 800) : '',
+      s9Reflection: s9 ? s9.value.slice(0, 800) : '',
+      final: !!isFinal,
+      updatedAt: new Date().toISOString()
+    });
+  } catch (e) {
+    // transient — the next real change will retry
+  }
+  writeInFlight = false;
+  if (writeQueued) { writeQueued = false; syncProgress(isFinal); }
+}
+
+async function renderInstructorDashboard() {
+  const panel = document.getElementById('instructor-panel');
+  if (!panel) return;
+  panel.style.display = 'block';
+  panel.innerHTML = '<h3 style="margin-top:0;">Class completion (visible to you as the owner)</h3>';
+  if (!dbNS) {
+    const p = document.createElement('p');
+    p.textContent = 'Database not available in this view.';
+    panel.appendChild(p);
+    return;
+  }
+  let snap;
+  try {
+    snap = await dbNS.collection('completions').get();
+  } catch (e) {
+    const p = document.createElement('p');
+    p.textContent = 'Could not load completion data right now.';
+    panel.appendChild(p);
+    return;
+  }
+  const ids = snap.docs.map(d => d.id);
+  let profiles = {};
+  try { profiles = (userNS && ids.length) ? await userNS.profiles(ids) : {}; } catch (e) {}
+  const table = document.createElement('table');
+  table.className = 'pareto-table';
+  const header = document.createElement('tr');
+  ['Student', 'Progress', 'Last update'].forEach(h => { const th = document.createElement('th'); th.textContent = h; header.appendChild(th); });
+  table.appendChild(header);
+  if (snap.docs.length === 0) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 3; td.textContent = 'No submissions yet.';
+    tr.appendChild(td); table.appendChild(tr);
+  }
+  snap.docs.forEach(d => {
+    const data = d.data() || {};
+    const prof = profiles[d.id];
+    const name = (prof && prof.name) || d.id;
+    const pct = Math.round(((data.sectionsDone || []).length / 10) * 100);
+    const tr = document.createElement('tr');
+    const tdName = document.createElement('td'); tdName.textContent = name; tr.appendChild(tdName);
+    const tdPct = document.createElement('td'); tdPct.textContent = pct + '%'; tr.appendChild(tdPct);
+    const tdTime = document.createElement('td'); tdTime.textContent = (data.updatedAt || '').replace('T', ' ').slice(0, 16); tr.appendChild(tdTime);
+    table.appendChild(tr);
+  });
+  panel.appendChild(table);
+}
+
+initCloudProgress();
+
+// ================= submission generation (works with no capabilities at all) =================
+async function sha256Hex(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function generateSubmission() {
+  const status = document.getElementById('submit-generate-status');
+  const allChecked = document.getElementById('checklist-done').style.display === 'block';
+  if (!allChecked) {
+    status.style.color = 'var(--danger)';
+    status.textContent = 'Finish checking every item in both checklists above first — the submission reflects what you actually completed.';
+    return;
+  }
+  const name = document.getElementById('submit-name').value.trim() || '(name not entered)';
+  const quizLines = Object.keys(quizzes).map(id => `  ${id}: ${quizCorrect[id] === true ? 'correct' : (quizCorrect[id] === false ? 'incorrect (on last attempt)' : 'not attempted')}`).join('\n');
+  const s8 = (document.getElementById('s8-reflect') || {}).value || '(empty)';
+  const s9 = (document.getElementById('s9-reflect') || {}).value || '(empty)';
+  const sectionsList = [...sectionDone].sort((a,b)=>a-b).join(', ');
+  const graderLabel = { code: 'code-based', model: 'model-based', human: 'human review', '': '(not chosen)' };
+  const graderLines = [1,2,3,4].map(i => {
+    const el = document.getElementById('tc'+i+'-grader');
+    return `  test case ${i}: ${el ? graderLabel[el.value] : '(n/a)'}`;
+  }).join('\n');
+
+  let body =
+`WEEK 3 PRELAB SUBMISSION
+Evaluating & Optimizing Agent Skills
+
+Name: ${name}
+Generated: ${new Date().toISOString()}
+Sections completed: ${sectionsList} (${sectionDone.size}/${SECTIONS})
+
+Quiz results:
+${quizLines}
+
+Grading methods chosen (Section 8):
+${graderLines}
+
+Reflection — Activity: hardest test case (Section 8):
+${s8}
+
+Reflection — Final reflection (Section 9):
+${s9}
+`;
+
+  const hash = await sha256Hex(body);
+  const fullText = body + `\nIntegrity hash (SHA-256 of everything above this line): ${hash}\n`;
+
+  const preview = document.getElementById('submit-preview');
+  preview.value = fullText;
+  preview.style.display = 'block';
+  document.getElementById('submit-copy-btn').style.display = 'inline-flex';
+
+  let downloadsNS = null;
+  try { downloadsNS = (window.claude && window.claude.use) ? await window.claude.use('downloads') : null; } catch (e) {}
+
+  if (downloadsNS) {
+    try {
+      const filename = 'prelab3-submission-' + name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') + '.txt';
+      await downloadsNS.save({ filename, data: fullText });
+      status.style.color = 'var(--success)';
+      status.textContent = '✓ Downloaded — upload that file wherever your instructor collects prelab submissions.';
+    } catch (e) {
+      status.style.color = 'var(--text-2)';
+      status.textContent = 'Could not trigger a download here — the text is shown below. Copy it and paste it into your submission form instead.';
+    }
+  } else {
+    status.style.color = 'var(--text-2)';
+    status.textContent = 'Downloads aren\'t available in this view — the text is shown below. Copy it and paste it into your submission form instead.';
+  }
+}
+
+function copySubmission() {
+  const preview = document.getElementById('submit-preview');
+  preview.select();
+  try {
+    navigator.clipboard.writeText(preview.value);
+    const btn = document.getElementById('submit-copy-btn');
+    const old = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = old, 1500);
+  } catch (e) {
+    document.execCommand('copy');
+  }
+}
+
+const PRELAB_ID = 'prelab-3'
+const SUPABASE_URL = 'https://jfjegonhtmmuublikxpk.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmamVnb25odG1tdXVibGlreHBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMTAxMDEsImV4cCI6MjEwNjY4NjEwMX0.1xEklI15Df1nRSgc9JmIz7dytqS2uWB_hV9ec2PFofM'
+const { createClient } = supabase
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+let currentUser = null
+
+async function initAuth() {
+  const { data: { session } } = await db.auth.getSession()
+  if (!session) { window.location.href = '../index.html'; return }
+  currentUser = session.user
+  const logo = document.querySelector('.sidebar-logo')
+  const userBar = document.createElement('div')
+  userBar.style.cssText = 'padding:8px 1.25rem 0;display:flex;align-items:center;justify-content:space-between;'
+  userBar.innerHTML = `<span style="font-size:12px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;">${currentUser.email}</span><button onclick="doLogout()" style="font-size:11px;padding:3px 8px;border:0.5px solid var(--border-strong);border-radius:6px;background:none;color:var(--text-3);cursor:pointer;">Out</button>`
+  logo.appendChild(userBar)
+  const dashLink = document.createElement('div')
+  dashLink.style.cssText = 'padding:6px 1.25rem 0;'
+  dashLink.innerHTML = `<a href="../dashboard.html" style="font-size:12px;font-weight:500;color:var(--accent-text);text-decoration:none;display:inline-block;padding:5px 10px;background:var(--accent-bg);border:0.5px solid var(--accent-border);border-radius:6px;margin-top:2px;">← Dashboard</a>`
+  logo.appendChild(dashLink)
+  await restoreProgress()
+}
+
+async function restoreProgress() {
+  const { data } = await db.from('progress').select('section_id').eq('user_id', currentUser.id).eq('prelab_id', PRELAB_ID)
+  if (!data || data.length === 0) return
+  const completed = new Set(data.map(r => r.section_id))
+  completed.forEach(sid => {
+    if (!/^section-\d+$/.test(sid)) return
+    const n = parseInt(sid.replace('section-', ''))
+    if (isNaN(n)) return
+    sectionDone.add(n)
+    const navDot = document.querySelector('.nav-item[data-section="'+n+'"]')
+    if (navDot) navDot.classList.add('done')
+    const nextBtn = document.getElementById('next-'+n)
+    if (nextBtn) nextBtn.removeAttribute('disabled')
+  })
+  while (sectionDone.has(unlockedUpTo)) unlockedUpTo++
+  if (unlockedUpTo > 0) goTo(Math.min(unlockedUpTo, 9))
+}
+
+async function saveProgress(sectionN) {
+  if (!currentUser) return
+  const { error } = await db.from('progress').insert({
+    user_id: currentUser.id, prelab_id: PRELAB_ID, section_id: 'section-' + sectionN
+  })
+  if (error && error.code !== '23505') console.error('Progress save error:', error)
+}
+
+async function doLogout() {
+  await db.auth.signOut()
+  window.location.href = '../index.html'
+}
+
+initAuth()
+</script>
+</body>
+</html>

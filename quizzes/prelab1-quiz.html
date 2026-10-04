@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prelab 1 Quiz — GenAI SkillBuilding</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #f8f7f4; --surface: #ffffff; --surface-2: #f1efe8;
+    --border: rgba(0,0,0,0.1); --border-strong: rgba(0,0,0,0.18);
+    --text: #1a1a18; --text-2: #555550; --text-3: #888780;
+    --accent: #1a55a8; --accent-bg: #e8f0fe; --accent-border: #b8d0f5; --accent-text: #0c3d7a;
+    --success: #0f6e56; --success-bg: #e1f5ee; --success-border: #9fe1cb;
+    --danger: #993c1d; --danger-bg: #faece7;
+    --yellow: #f5c100; --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.7; min-height: 100vh; }
+
+  nav {
+    background: var(--surface); border-bottom: 0.5px solid var(--border-strong);
+    padding: 0 2rem; height: 52px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .nav-logo { font-size: 15px; font-weight: 600; text-decoration: none; color: var(--text); }
+  .nav-logo span { color: var(--yellow); }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .nav-email { font-size: 12px; color: var(--text-3); }
+  .btn-out { font-size: 12px; padding: 4px 10px; border: 0.5px solid var(--border-strong); border-radius: 6px; background: none; color: var(--text-3); cursor: pointer; }
+  .accent-bar { height: 3px; background: linear-gradient(90deg, var(--accent), var(--yellow)); }
+
+  .container { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+
+  .quiz-header { margin-bottom: 2rem; }
+  .quiz-tag { display: inline-block; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-text); background: var(--accent-bg); padding: 3px 10px; border-radius: 99px; border: 0.5px solid var(--accent-border); margin-bottom: 0.75rem; }
+  h1 { font-size: 24px; font-weight: 500; margin-bottom: 0.5rem; }
+  .quiz-meta { font-size: 14px; color: var(--text-2); }
+
+  .already-submitted {
+    background: var(--success-bg); border: 0.5px solid var(--success-border);
+    border-radius: 12px; padding: 1.5rem 2rem; margin-bottom: 2rem; display: none;
+  }
+  .already-submitted h3 { font-size: 16px; font-weight: 500; color: var(--success); margin-bottom: 6px; }
+  .already-submitted p { font-size: 14px; color: var(--success); margin: 0; }
+
+  .question-card {
+    background: var(--surface); border: 0.5px solid var(--border-strong);
+    border-radius: 12px; padding: 1.5rem; margin-bottom: 1.25rem;
+  }
+  .q-number { font-size: 11px; font-weight: 500; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+  .q-text { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 1rem; line-height: 1.5; }
+
+  .option {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 14px; border: 0.5px solid var(--border-strong);
+    border-radius: 8px; margin-bottom: 8px; cursor: pointer;
+    transition: 0.15s; font-size: 14px; color: var(--text-2);
+    background: var(--surface); user-select: none;
+  }
+  .option:hover { border-color: var(--accent-border); background: var(--accent-bg); }
+  .option.selected { border-color: var(--accent); background: var(--accent-bg); color: var(--accent-text); }
+  .option.correct { border-color: var(--success); background: var(--success-bg); color: var(--success); }
+  .option.wrong { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); }
+  .option.disabled { cursor: default; pointer-events: none; }
+  .opt-letter {
+    width: 22px; height: 22px; border-radius: 50%; background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; flex-shrink: 0; color: var(--text-3); margin-top: 1px;
+  }
+  .option.selected .opt-letter { background: var(--accent); color: white; }
+  .option.correct .opt-letter { background: var(--success); color: white; }
+  .option.wrong .opt-letter { background: var(--danger); color: white; }
+
+  .submit-row { margin-top: 2rem; display: flex; align-items: center; gap: 16px; }
+  .btn-submit {
+    padding: 11px 28px; background: var(--accent); color: white;
+    border: none; border-radius: 8px; font-size: 15px; font-weight: 500;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .btn-submit:hover { background: #13407f; }
+  .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+  .submit-note { font-size: 13px; color: var(--text-3); }
+
+  .results-card {
+    background: var(--surface); border: 2px solid var(--accent-border);
+    border-radius: 16px; padding: 2rem; margin-top: 2rem; display: none; text-align: center;
+  }
+  .results-card.show { display: block; }
+  .score-big { font-size: 52px; font-weight: 600; color: var(--accent); line-height: 1; margin-bottom: 8px; }
+  .score-label { font-size: 16px; color: var(--text-2); margin-bottom: 1.5rem; }
+  .score-bar-bg { height: 10px; background: var(--surface-2); border-radius: 99px; overflow: hidden; margin: 0 auto 1.5rem; max-width: 300px; }
+  .score-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--yellow)); border-radius: 99px; transition: width 0.8s ease; }
+  .results-note { font-size: 14px; color: var(--text-2); margin-bottom: 1.5rem; }
+  .btn-dashboard { display: inline-block; padding: 10px 24px; background: var(--accent); color: white; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="../dashboard.html">GenAI <span>SkillBuilding</span></a>
+  <div class="nav-right">
+    <span class="nav-email" id="user-email"></span>
+    <a href="../dashboard.html" style="font-size:12px;padding:4px 10px;border:0.5px solid var(--border-strong);border-radius:6px;color:var(--text-3);text-decoration:none;transition:0.15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-3)'">← Dashboard</a>
+    <button class="btn-out" onclick="doLogout()">Log out</button>
+  </div>
+</nav>
+<div class="accent-bar"></div>
+
+<div class="container">
+  <div class="quiz-header">
+    <div class="quiz-tag">Prelab 1 · Graded Quiz</div>
+    <h1>Prompt Engineering & Agent Skills</h1>
+    <p class="quiz-meta">10 questions · Based on the Prelab 1 reading · Submitted once</p>
+  </div>
+
+  <div class="already-submitted" id="already-submitted">
+    <h3>✓ Already submitted</h3>
+    <p id="prev-score-text"></p>
+  </div>
+
+  <div id="quiz-body">
+    <!-- Questions injected by JS -->
+  </div>
+
+  <div class="submit-row" id="submit-row">
+    <button class="btn-submit" id="submit-btn" onclick="submitQuiz()">Submit quiz</button>
+    <span class="submit-note">You can only submit once. Review your answers before submitting.</span>
+  </div>
+
+  <div class="results-card" id="results-card">
+    <div class="score-big" id="score-big"></div>
+    <div class="score-label" id="score-label"></div>
+    <div class="score-bar-bg"><div class="score-bar-fill" id="score-bar"></div></div>
+    <div class="results-note">Your answers are saved. Your instructor can see your score.</div>
+    <a class="btn-dashboard" href="../dashboard.html">← Back to dashboard</a>
+  </div>
+</div>
+
+<script>
+// ─── SUPABASE ────────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://jfjegonhtmmuublikxpk.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmamVnb25odG1tdXVibGlreHBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMTAxMDEsImV4cCI6MjEwNjY4NjEwMX0.1xEklI15Df1nRSgc9JmIz7dytqS2uWB_hV9ec2PFofM'
+const { createClient } = supabase
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+const QUIZ_ID = 'prelab-1-quiz'
+let currentUser = null
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── QUESTIONS ───────────────────────────────────────────────────────────────
+// Fill these in when ready — answer index is 0-based
+const QUESTIONS = [
+  {
+    q: "What is prompt engineering?",
+    opts: [
+      "Writing code to call AI APIs",
+      "Designing and revising prompts to guide AI models toward more useful outputs",
+      "Training a new AI model from scratch",
+      "Selecting which AI model to use for a task"
+    ],
+    ans: 1
+  },
+  {
+    q: "Which prompting strategy gives the AI a task with no examples?",
+    opts: ["Few-shot prompting", "Chain-of-thought prompting", "Zero-shot prompting", "Role prompting"],
+    ans: 2
+  },
+  {
+    q: "When should you reach for few-shot instead of zero-shot?",
+    opts: [
+      "Always — few-shot is always better",
+      "When the output format is flexible and the task is simple",
+      "When the output needs a specific structure the model might not guess on its own",
+      "Only when working with images"
+    ],
+    ans: 2
+  },
+  {
+    q: "Which of these is NOT one of the six common prompting elements covered in the prelab?",
+    opts: ["Persona", "Tone", "Token limit", "Format"],
+    ans: 2
+  },
+  {
+    q: "What does Chain of Thought (CoT) prompting do?",
+    opts: [
+      "Speeds up the model's response time",
+      "Guides the model to break down a problem into intermediate steps before answering",
+      "Gives the model multiple examples to learn from",
+      "Forces the model to use bullet points in its output"
+    ],
+    ans: 1
+  },
+  {
+    q: "Which phrase reliably activates chain-of-thought reasoning?",
+    opts: [
+      '"Answer as fast as possible."',
+      '"Give me a one-word answer."',
+      '"Let\'s think step by step."',
+      '"Use JSON format."'
+    ],
+    ans: 2
+  },
+  {
+    q: "What makes something an agentic workflow (vs. a regular chatbot)?",
+    opts: [
+      "It uses a more powerful AI model",
+      "The LLM controls how the workflow moves, not just responds to prompts",
+      "It always connects to the internet",
+      "It generates images as well as text"
+    ],
+    ans: 1
+  },
+  {
+    q: "What are the three parts of an agent?",
+    opts: [
+      "Prompt, response, feedback",
+      "Model, tools, instructions",
+      "Input, processing, output",
+      "Training data, weights, inference"
+    ],
+    ans: 1
+  },
+  {
+    q: "What is an agent skill?",
+    opts: [
+      "A one-time prompt for a specific task",
+      "A Python function that calls an API",
+      "A reusable instruction set an agent can discover and use across many tasks",
+      "A fine-tuned model for a specific domain"
+    ],
+    ans: 2
+  },
+  {
+    q: "According to the best practices doc, what should a skill's description always include?",
+    opts: [
+      "The author's name and version number",
+      "Both what the skill does AND a 'Use when...' trigger",
+      "A list of all possible inputs",
+      "The exact output format in JSON"
+    ],
+    ans: 1
+  }
+]
+// ─────────────────────────────────────────────────────────────────────────────
+
+const userAnswers = new Array(QUESTIONS.length).fill(null)
+
+function buildQuiz() {
+  const body = document.getElementById('quiz-body')
+  body.innerHTML = QUESTIONS.map((q, qi) => `
+    <div class="question-card" id="qcard-${qi}">
+      <div class="q-number">Question ${qi + 1} of ${QUESTIONS.length}</div>
+      <div class="q-text">${q.q}</div>
+      ${q.opts.map((opt, oi) => `
+        <div class="option" id="opt-${qi}-${oi}" onclick="selectAnswer(${qi}, ${oi})">
+          <div class="opt-letter">${'ABCD'[oi]}</div>
+          <span>${opt}</span>
+        </div>
+      `).join('')}
+    </div>
+  `).join('')
+}
+
+function selectAnswer(qi, oi) {
+  // Deselect previous
+  QUESTIONS[qi].opts.forEach((_, i) => {
+    document.getElementById(`opt-${qi}-${i}`).classList.remove('selected')
+  })
+  userAnswers[qi] = oi
+  document.getElementById(`opt-${qi}-${oi}`).classList.add('selected')
+}
+
+async function submitQuiz() {
+  const unanswered = userAnswers.filter(a => a === null).length
+  if (unanswered > 0) {
+    alert(`Please answer all questions. You have ${unanswered} unanswered.`)
+    return
+  }
+
+  const btn = document.getElementById('submit-btn')
+  btn.disabled = true
+  btn.textContent = 'Submitting...'
+
+  // Score it
+  let score = 0
+  QUESTIONS.forEach((q, qi) => { if (userAnswers[qi] === q.ans) score++ })
+
+  // Show correct/wrong on each option
+  QUESTIONS.forEach((q, qi) => {
+    q.opts.forEach((_, oi) => {
+      const el = document.getElementById(`opt-${qi}-${oi}`)
+      el.classList.add('disabled')
+      el.classList.remove('selected')
+      if (oi === q.ans) el.classList.add('correct')
+      else if (oi === userAnswers[qi] && userAnswers[qi] !== q.ans) el.classList.add('wrong')
+    })
+  })
+
+  // Save to Supabase
+  await db.from('quiz_results').insert({
+    user_id: currentUser.id,
+    quiz_id: QUIZ_ID,
+    score,
+    total: QUESTIONS.length,
+    answers: userAnswers
+  })
+
+  // Show results
+  document.getElementById('submit-row').style.display = 'none'
+  const pct = Math.round((score / QUESTIONS.length) * 100)
+  document.getElementById('score-big').textContent = `${score}/${QUESTIONS.length}`
+  document.getElementById('score-label').textContent = `${pct}% — ${pct >= 80 ? 'Great work! 🎉' : pct >= 60 ? 'Good effort — review the sections you missed.' : 'Review the prelab and check in with your instructor.'}`
+  document.getElementById('score-bar').style.width = pct + '%'
+  const card = document.getElementById('results-card')
+  card.classList.add('show')
+  card.scrollIntoView({ behavior: 'smooth' })
+}
+
+async function initAuth() {
+  const { data: { session } } = await db.auth.getSession()
+  if (!session) { window.location.href = '../index.html'; return }
+  currentUser = session.user
+  document.getElementById('user-email').textContent = currentUser.email
+
+  // Check if already submitted
+  const { data } = await db.from('quiz_results')
+    .select('score, total, submitted_at')
+    .eq('user_id', currentUser.id)
+    .eq('quiz_id', QUIZ_ID)
+    .order('submitted_at', { ascending: false })
+    .limit(1)
+
+  if (data && data.length > 0) {
+    const r = data[0]
+    const pct = Math.round((r.score / r.total) * 100)
+    const date = new Date(r.submitted_at).toLocaleDateString()
+    document.getElementById('prev-score-text').textContent =
+      `You scored ${r.score}/${r.total} (${pct}%) on ${date}. Your instructor has your submission.`
+    document.getElementById('already-submitted').style.display = 'block'
+    document.getElementById('submit-row').style.display = 'none'
+    // Make all options unclickable
+    document.querySelectorAll('.option').forEach(el => el.classList.add('disabled'))
+  }
+
+  buildQuiz()
+}
+
+async function doLogout() {
+  await db.auth.signOut()
+  window.location.href = '../index.html'
+}
+
+initAuth()
+</script>
+</body>
+</html>

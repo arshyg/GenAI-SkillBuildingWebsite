@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prelab 1 — GenAI SkillBuilding</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #f8f7f4; --surface: #ffffff; --surface-2: #f1efe8;
+    --border: rgba(0,0,0,0.1); --border-strong: rgba(0,0,0,0.18);
+    --text: #1a1a18; --text-2: #555550; --text-3: #888780;
+    --accent: #5034c4; --accent-bg: #eeedfe; --accent-border: #afa9ec; --accent-text: #3c3489;
+    --success: #0f6e56; --success-bg: #e1f5ee; --success-border: #9fe1cb;
+    --danger: #993c1d; --danger-bg: #faece7;
+    --warning-bg: #faeeda; --warning-text: #633806; --warning-border: #fac775;
+    --teal: #1d9e75; --coral: #d85a30;
+    --radius: 8px; --mono: 'Fira Code','Courier New',monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.7; }
+  .app { display: flex; min-height: 100vh; }
+  .sidebar { width: 224px; flex-shrink: 0; background: var(--surface); border-right: 0.5px solid var(--border-strong); position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 1.5rem 0; }
+  .sidebar-logo { padding: 0 1.25rem 1.25rem; border-bottom: 0.5px solid var(--border); margin-bottom: 0.75rem; }
+  .sidebar-logo .label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); }
+  .sidebar-logo h2 { font-size: 14px; font-weight: 500; color: var(--text); margin-top: 2px; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 7px 1.25rem; font-size: 13px; color: var(--text-2); cursor: pointer; border-left: 2px solid transparent; transition: all 0.15s; user-select: none; }
+  .nav-item:hover { color: var(--text); background: var(--surface-2); }
+  .nav-item.active { color: var(--accent-text); border-left-color: var(--accent); background: var(--accent-bg); font-weight: 500; }
+  .nav-item .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border-strong); flex-shrink: 0; }
+  .nav-item.active .dot { background: var(--accent); }
+  .nav-section-label { padding: 0.75rem 1.25rem 0.25rem; font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); }
+
+  .main { flex: 1; padding: 2.5rem 3rem; max-width: 780px; }
+  .section { display: none; animation: fadein 0.2s ease; }
+  .section.active { display: block; }
+  @keyframes fadein { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+  .section-tag { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-text); background: var(--accent-bg); display: inline-block; padding: 3px 10px; border-radius: 99px; margin-bottom: 1rem; border: 0.5px solid var(--accent-border); }
+  h1 { font-size: 26px; font-weight: 500; margin-bottom: 0.5rem; line-height: 1.3; }
+  h2 { font-size: 18px; font-weight: 500; margin: 2rem 0 0.75rem; }
+  h3 { font-size: 15px; font-weight: 500; margin: 1.5rem 0 0.5rem; color: var(--text); }
+  p { margin-bottom: 1rem; color: var(--text-2); }
+  p strong { color: var(--text); font-weight: 500; }
+  .subtitle { font-size: 16px; color: var(--text-2); margin-bottom: 2rem; }
+  ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; color: var(--text-2); }
+  li { margin-bottom: 0.35rem; }
+  li strong { color: var(--text); }
+  .card { background: var(--surface); border: 0.5px solid var(--border-strong); border-radius: 12px; padding: 1.25rem 1.5rem; margin: 1.25rem 0; }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 1.25rem 0; }
+  .card-sm { background: var(--surface); border: 0.5px solid var(--border-strong); border-radius: 12px; padding: 1rem 1.25rem; }
+  .card-sm h4 { font-size: 14px; font-weight: 500; margin-bottom: 0.25rem; }
+  .card-sm p { font-size: 13px; color: var(--text-2); margin: 0; }
+  .callout { border-radius: 8px; padding: 0.875rem 1rem; margin: 1rem 0; font-size: 14px; border-left: 3px solid; }
+  .callout-info { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+  .callout-tip { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+  .callout-warn { background: var(--warning-bg); border-color: #ba7517; color: var(--warning-text); }
+  .callout-colab { background: #fff8e6; border-color: #f0b429; color: #7a4f00; border-left: 3px solid #f0b429; }
+  .callout strong { font-weight: 500; display: block; margin-bottom: 2px; }
+  code { font-family: var(--mono); font-size: 12.5px; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; color: var(--text); }
+  pre { background: #1e1e1e; color: #d4d4d4; border-radius: 8px; padding: 1rem 1.25rem; font-family: var(--mono); font-size: 12.5px; line-height: 1.65; overflow-x: auto; margin: 1rem 0; }
+  pre .c { color: #6a9955; } pre .k { color: #569cd6; } pre .s { color: #ce9178; } pre .n { color: #9cdcfe; }
+  .quiz-option { display: flex; align-items: flex-start; gap: 10px; padding: 0.75rem 1rem; border: 0.5px solid var(--border-strong); border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: 0.15s; font-size: 14px; color: var(--text-2); background: var(--surface); }
+  .quiz-option:hover { border-color: var(--accent-border); background: var(--accent-bg); }
+  .quiz-option.correct { border-color: var(--success); background: var(--success-bg); color: var(--success); }
+  .quiz-option.wrong { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); }
+  .quiz-option .letter { width: 20px; height: 20px; border-radius: 50%; background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; color: var(--text-3); margin-top: 1px; }
+  .quiz-option.correct .letter { background: var(--success); color: white; }
+  .quiz-option.wrong .letter { background: var(--danger); color: white; }
+  .quiz-feedback { display: none; padding: 0.75rem 1rem; border-radius: 8px; font-size: 13.5px; margin-top: 0.75rem; }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: var(--success-bg); color: var(--success); border: 0.5px solid var(--success-border); }
+  .quiz-feedback.wrong { background: var(--danger-bg); color: var(--danger); border: 0.5px solid #f5c4b3; }
+  textarea { width: 100%; border: 0.5px solid var(--border-strong); border-radius: 8px; padding: 0.75rem 1rem; font-size: 14px; font-family: inherit; color: var(--text); background: var(--surface); resize: vertical; min-height: 100px; transition: 0.15s; outline: none; }
+  textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-bg); }
+  textarea::placeholder { color: var(--text-3); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); font-size: 13.5px; font-weight: 500; cursor: pointer; transition: 0.15s; }
+  .btn:hover { background: var(--surface-2); }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .btn-primary:hover { background: #3c3489; }
+  .btn-sm { padding: 5px 12px; font-size: 12.5px; }
+  hr { border: none; border-top: 0.5px solid var(--border); margin: 2rem 0; }
+  .read-check { display: flex; align-items: center; gap: 10px; padding: 0.75rem 1rem; background: var(--surface-2); border-radius: 8px; margin-top: 1.25rem; cursor: pointer; font-size: 14px; color: var(--text-2); border: 0.5px solid var(--border); user-select: none; transition: 0.15s; }
+  .read-check:hover { background: var(--surface); }
+  .read-check.checked { background: var(--success-bg); color: var(--success); border-color: var(--success-border); }
+  .read-check .box { width: 18px; height: 18px; border: 1.5px solid var(--border-strong); border-radius: 4px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+  .read-check.checked .box { background: var(--success); border-color: var(--success); color: white; }
+  .nav-buttons { display: flex; gap: 10px; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); }
+
+  /* Flip cards */
+  .flip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin: 1.25rem 0; }
+  .flip-card { height: 160px; perspective: 900px; cursor: pointer; }
+  .flip-inner { position: relative; width: 100%; height: 100%; transition: transform 0.45s cubic-bezier(.4,2,.6,1); transform-style: preserve-3d; }
+  .flip-card.flipped .flip-inner { transform: rotateY(180deg); }
+  .flip-front, .flip-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; justify-content: center; }
+  .flip-front { background: var(--surface); border: 0.5px solid var(--border-strong); }
+  .flip-back { background: var(--accent-bg); border: 0.5px solid var(--accent-border); transform: rotateY(180deg); }
+  .flip-front h4 { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+  .flip-front .hint { font-size: 11px; color: var(--text-3); margin-top: auto; }
+  .flip-back p { font-size: 12.5px; color: var(--accent-text); line-height: 1.55; margin: 0; }
+  .flip-back .flip-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 6px; }
+
+  /* Sort drag */
+  .sort-list { list-style: none; padding: 0; }
+  .sort-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface); border: 0.5px solid var(--border-strong); border-radius: 8px; margin-bottom: 8px; cursor: grab; font-size: 14px; color: var(--text-2); transition: 0.15s; user-select: none; }
+  .sort-item:active { cursor: grabbing; opacity: 0.7; }
+  .sort-item .grip { color: var(--text-3); font-size: 16px; }
+  .sort-item.dragging { opacity: 0.4; }
+  .sort-item.over { border-color: var(--accent); background: var(--accent-bg); }
+
+  /* Match */
+  .match-row { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+  .match-term { flex: 1; padding: 8px 12px; background: var(--accent-bg); border: 0.5px solid var(--accent-border); border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--accent-text); }
+  .match-select { flex: 1.5; padding: 8px 12px; border: 0.5px solid var(--border-strong); border-radius: 8px; font-size: 13px; font-family: inherit; color: var(--text); background: var(--surface); outline: none; }
+  .match-select.correct { border-color: var(--success); background: var(--success-bg); color: var(--success); }
+  .match-select.wrong { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); }
+
+  /* Skill builder */
+  .skill-field { margin-bottom: 1rem; }
+  .skill-field label { display: block; font-size: 12.5px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .skill-field input { width: 100%; padding: 8px 12px; border: 0.5px solid var(--border-strong); border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--text); background: var(--surface); outline: none; transition: 0.15s; }
+  .skill-field input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-bg); }
+  .skill-preview { background: #1e1e1e; color: #d4d4d4; border-radius: 8px; padding: 1rem 1.25rem; font-family: var(--mono); font-size: 12px; line-height: 1.65; min-height: 200px; white-space: pre-wrap; word-break: break-word; }
+  .skill-preview .y { color: #9cdcfe; } .skill-preview .v { color: #ce9178; } .skill-preview .c { color: #6a9955; }
+
+  /* Token bar */
+  .token-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 1.25rem 0; }
+  .token-box { background: var(--surface); border: 0.5px solid var(--border-strong); border-radius: 12px; padding: 1rem 1.25rem; }
+  .token-box .tok-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
+  .tok-label.bad { color: var(--danger); }
+  .tok-label.good { color: var(--success); }
+  .token-bar-wrap { margin: 8px 0 4px; }
+  .token-bar { height: 10px; border-radius: 99px; transition: width 0.6s ease; }
+  .token-bar.bad { background: var(--danger); }
+  .token-bar.good { background: var(--success); }
+  .token-count { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+  .token-box pre { font-size: 11px; margin: 10px 0 0; }
+
+  /* Context window visualiser */
+  .ctx-stage { background: var(--surface-2); border-radius: 12px; padding: 1.25rem; margin: 1.25rem 0; }
+  .ctx-window { border: 2px solid var(--accent-border); border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
+  .ctx-slot { padding: 8px 12px; font-size: 12.5px; font-weight: 500; transition: all 0.4s ease; display: flex; align-items: center; gap: 8px; }
+  .ctx-slot.empty { background: var(--surface-2); color: var(--text-3); border-bottom: 0.5px solid var(--border); }
+  .ctx-slot.filled-meta { background: var(--accent-bg); color: var(--accent-text); border-bottom: 0.5px solid var(--accent-border); }
+  .ctx-slot.filled-skill { background: #fff8e6; color: #7a4f00; border-bottom: 0.5px solid var(--warning-border); }
+  .ctx-slot.filled-ref { background: var(--success-bg); color: var(--success); border-bottom: 0.5px solid var(--success-border); }
+  .ctx-slot .slot-icon { width: 18px; height: 18px; border-radius: 4px; background: currentColor; opacity: 0.2; flex-shrink: 0; }
+  .ctx-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .ctx-step-label { font-size: 13px; color: var(--text-2); margin-bottom: 10px; min-height: 40px; }
+
+  /* Anti-pattern fix activity */
+  .broken-skill { background: #1e1e1e; color: #d4d4d4; border-radius: 8px; font-family: var(--mono); font-size: 12px; line-height: 1.7; padding: 1rem 1.25rem; margin: 1rem 0; position: relative; }
+  .ap-highlight { background: rgba(220, 80, 60, 0.3); border-radius: 3px; cursor: pointer; border-bottom: 2px solid #f08070; position: relative; display: inline; }
+  .ap-highlight.found { background: rgba(220, 80, 60, 0.5); }
+  .ap-tooltip { display: none; position: absolute; bottom: calc(100% + 6px); left: 0; background: #333; color: #fff; font-size: 11px; padding: 5px 9px; border-radius: 6px; white-space: nowrap; z-index: 10; pointer-events: none; }
+  .ap-highlight.found .ap-tooltip { display: block; }
+  .ap-count { font-size: 13.5px; color: var(--text-2); margin: 0.5rem 0; }
+
+  /* Checklist */
+  .checklist-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); cursor: pointer; font-size: 14px; color: var(--text-2); }
+  .checklist-item:last-child { border: none; }
+  .checklist-item input[type=checkbox] { margin-top: 3px; accent-color: var(--accent); width: 15px; height: 15px; flex-shrink: 0; }
+  .checklist-item.done { text-decoration: line-through; color: var(--text-3); }
+
+  /* Real skill tabs */
+  .skill-tabs { display: flex; gap: 0; border: 0.5px solid var(--border-strong); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; width: fit-content; }
+  .skill-tab { padding: 7px 16px; font-size: 13px; font-weight: 500; border: none; cursor: pointer; background: var(--surface); color: var(--text-2); border-right: 0.5px solid var(--border-strong); transition: 0.15s; }
+  .skill-tab:last-child { border-right: none; }
+  .skill-tab.active { background: var(--accent); color: white; }
+  .skill-tab-content { display: none; }
+  .skill-tab-content.active { display: block; }
+
+  @media (max-width: 700px) { .sidebar { display: none; } .main { padding: 1.5rem 1.25rem; } .token-compare { grid-template-columns: 1fr; } }
+
+  .btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+  .btn[disabled]:hover { background: var(--surface); transform: none; }
+  .nav-item.locked { opacity: 0.45; cursor: not-allowed; }
+  .section-hint { font-size: 13px; color: var(--text-3); font-style: italic; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)} 40%{transform:translateX(5px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+  .shake { animation: shake 0.35s ease; }
+</style>
+</head>
+<body>
+<div class="app">
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="label">Week 1 · Prelab</div>
+    <h2>Agents & Agent Skills</h2>
+  </div>
+  <div class="nav-section-label">Prompt Engineering</div>
+  <div class="nav-item active" data-section="0"><span class="dot"></span>Zero-shot vs few-shot</div>
+  <div class="nav-item" data-section="1"><span class="dot"></span>Prompting techniques</div>
+  <div class="nav-item" data-section="2"><span class="dot"></span>Chain of thought</div>
+  <div class="nav-section-label">Foundations</div>
+  <div class="nav-item" data-section="3"><span class="dot"></span>What is an agent?</div>
+  <div class="nav-item" data-section="4"><span class="dot"></span>Anatomy of agents</div>
+  <div class="nav-item" data-section="5"><span class="dot"></span>Agent skills overview</div>
+  <div class="nav-section-label">Deep Dive</div>
+  <div class="nav-item" data-section="6"><span class="dot"></span>Skill structure & examples</div>
+  <div class="nav-item" data-section="7"><span class="dot"></span>Writing descriptions</div>
+  <div class="nav-item" data-section="8"><span class="dot"></span>Instructions & prompting</div>
+  <div class="nav-section-label">Best Practices</div>
+  <div class="nav-item" data-section="9"><span class="dot"></span>Conciseness & freedom</div>
+  <div class="nav-item" data-section="10"><span class="dot"></span>Progressive disclosure</div>
+  <div class="nav-item" data-section="11"><span class="dot"></span>Anti-patterns</div>
+  <div class="nav-section-label">Activities</div>
+  <div class="nav-item" data-section="12"><span class="dot"></span>Warmup activity</div>
+  <div class="nav-item" data-section="13"><span class="dot"></span>Checklist & reflection</div>
+
+</nav>
+
+<main class="main">
+
+<!-- 0: Zero-shot vs Few-shot -->
+<div class="section active" id="s0">
+  <div class="section-tag">Prompt Engineering · 1 of 3</div>
+  <h1>Zero-shot vs few-shot prompting</h1>
+  <p class="subtitle">Before building agent skills, you need to write good prompts. This section covers the two most fundamental prompting strategies.</p>
+
+  <h2>What is prompt engineering?</h2>
+  <p>Prompt engineering is the process of designing and revising prompts to guide AI models toward more useful outputs. A better prompt does not guarantee a better answer, but it gives the model clearer information about the task, context, audience, format, and constraints.</p>
+
+  <h2>The two baseline strategies</h2>
+  <div class="card-grid">
+    <div class="card-sm" style="border-top:3px solid var(--accent);">
+      <h4>Zero-shot prompting</h4>
+      <p>Give the AI a task with no examples. The model relies entirely on its training to figure out the expected format and style. Fast to write, but output shape can vary.</p>
+      <div style="background:var(--surface-2);border-radius:6px;padding:8px 10px;margin-top:8px;font-size:12.5px;color:var(--text-2);">
+        <em>"Summarize this article in three bullet points."</em>
+      </div>
+    </div>
+    <div class="card-sm" style="border-top:3px solid var(--purple);">
+      <h4>Few-shot prompting</h4>
+      <p>Give the AI a handful of input→output examples before your real task. The model learns the expected format and style from the examples, producing more consistent output.</p>
+      <div style="background:var(--surface-2);border-radius:6px;padding:8px 10px;margin-top:8px;font-size:12.5px;color:var(--text-2);">
+        <em>"Here are two example summaries: [A], [B]. Now summarize this article the same way."</em>
+      </div>
+    </div>
+  </div>
+
+  <h2>When to use which</h2>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+      <thead><tr style="background:var(--surface-2);"><th style="padding:10px 16px;text-align:left;font-weight:500;">Situation</th><th style="padding:10px 16px;text-align:left;font-weight:500;">Use</th></tr></thead>
+      <tbody>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;color:var(--text-2);">Output format is flexible or the task is simple</td><td style="padding:10px 16px;color:var(--accent-text);font-weight:500;">Zero-shot</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;color:var(--text-2);">Output needs a specific structure the model might not guess</td><td style="padding:10px 16px;color:var(--purple-text);font-weight:500;">Few-shot</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;color:var(--text-2);">Your output format isn't landing right after zero-shot</td><td style="padding:10px 16px;color:var(--purple-text);font-weight:500;">Few-shot</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;color:var(--text-2);">You want fast iteration and format isn't critical</td><td style="padding:10px 16px;color:var(--accent-text);font-weight:500;">Zero-shot</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>The rule of thumb</strong>
+    Start zero-shot. If the output format or tone isn't what you want, add 1–2 concrete examples showing exactly what you're looking for. Don't add examples just to add them — a bad example misleads the model more than no example at all.
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q0pe"></div>
+  <div class="nav-buttons"><button class="btn btn-primary" id="next-0" onclick="goTo(1)">Next: Prompting techniques →</button></div>
+</div>
+
+<!-- 1: Common prompting techniques -->
+<div class="section" id="s1">
+  <div class="section-tag">Prompt Engineering · 2 of 3</div>
+  <h1>Common prompting techniques</h1>
+  <p class="subtitle">A well-structured prompt is built from a small set of ingredients. You won't always need all of them — but knowing each one gives you a toolkit to draw on.</p>
+
+  <h2>The six elements</h2>
+  <p>Click each card to flip it and see a concrete example of that element in action.</p>
+
+  <div class="flip-grid" style="grid-template-columns:repeat(3,1fr);">
+    <div class="flip-card" onclick="trackFlipSec1(this,0)" style="height:170px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Task</h4><p style="font-size:13px;color:var(--text-2);margin:4px 0 0;">What you want the model to do — start with an action verb.</p><div class="hint">Click for example</div></div>
+        <div class="flip-back"><div class="flip-label">Example</div><p>"<strong>Summarize</strong> this article." / "<strong>Compare</strong> these two options." / "<strong>Rewrite</strong> this in plain English."</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="trackFlipSec1(this,1)" style="height:170px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Context</h4><p style="font-size:13px;color:var(--text-2);margin:4px 0 0;">Background the model needs to understand the situation.</p><div class="hint">Click for example</div></div>
+        <div class="flip-back"><div class="flip-label">Example</div><p>"I'm writing for a technical audience who already knows what APIs are, so skip the basics."</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="trackFlipSec1(this,2)" style="height:170px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Example</h4><p style="font-size:13px;color:var(--text-2);margin:4px 0 0;">A sample input, output, or style you want the model to follow.</p><div class="hint">Click for example</div></div>
+        <div class="flip-back"><div class="flip-label">Example</div><p>"Here's what a good summary looks like: [example]. Now do the same for this article."</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="trackFlipSec1(this,3)" style="height:170px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Persona</h4><p style="font-size:13px;color:var(--text-2);margin:4px 0 0;">The role or perspective the model should adopt.</p><div class="hint">Click for example</div></div>
+        <div class="flip-back"><div class="flip-label">Example</div><p>"Act as an experienced travel planner who specialises in budget trips for solo travellers."</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="trackFlipSec1(this,4)" style="height:170px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Format</h4><p style="font-size:13px;color:var(--text-2);margin:4px 0 0;">The structure of the output — table, bullets, steps, JSON…</p><div class="hint">Click for example</div></div>
+        <div class="flip-back"><div class="flip-label">Example</div><p>"Organise the itinerary as a table with columns: Day, Activities, Meals, Estimated cost."</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="trackFlipSec1(this,5)" style="height:170px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Tone</h4><p style="font-size:13px;color:var(--text-2);margin:4px 0 0;">The voice or style — professional, casual, concise, encouraging…</p><div class="hint">Click for example</div></div>
+        <div class="flip-back"><div class="flip-label">Example</div><p>"Use a fun and casual tone. Prioritise affordable activities and avoid anything that sounds corporate."</p></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Iterative prompt building</h2>
+  <p>You rarely write the perfect prompt on the first try. The technique is to start minimal and add one element at a time, testing as you go. Here's the same vacation-planning prompt built up iteratively:</p>
+
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+      <thead><tr style="background:var(--surface-2);"><th style="padding:10px 16px;text-align:left;font-weight:500;width:120px;">Iteration</th><th style="padding:10px 16px;text-align:left;font-weight:500;">Prompt</th></tr></thead>
+      <tbody>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;color:var(--accent-text);font-weight:500;">1. Task</td><td style="padding:10px 16px;color:var(--text-2);">Plan a vacation.</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;color:var(--accent-text);font-weight:500;">2. + Context</td><td style="padding:10px 16px;color:var(--text-2);">Plan a vacation. I want to take a 5-day trip with two friends during the summer.</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;color:var(--accent-text);font-weight:500;">3. + Persona</td><td style="padding:10px 16px;color:var(--text-2);">... Act like an experienced travel planner.</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;color:var(--accent-text);font-weight:500;">4. + Format</td><td style="padding:10px 16px;color:var(--text-2);">... Organise the itinerary in a table with the day, activities, meals, and estimated costs.</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;color:var(--accent-text);font-weight:500;">5. + Tone</td><td style="padding:10px 16px;color:var(--text-2);">... Use a fun and casual tone and prioritise affordable activities.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-tip">
+    <strong>Don't front-load everything</strong>
+    Adding all six elements to every prompt makes them unwieldy. Start with Task + one or two others. Only add more when the output isn't landing.
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q1pe"></div>
+  <div class="nav-buttons"><button class="btn" onclick="goTo(0)">← Back</button><button class="btn btn-primary" id="next-1" onclick="goTo(2)">Next: Chain of thought →</button></div>
+</div>
+
+<!-- 2: Chain of thought -->
+<div class="section" id="s2">
+  <div class="section-tag">Prompt Engineering · 3 of 3</div>
+  <h1>Chain of thought prompting</h1>
+  <p class="subtitle">For complex, multi-step problems, asking the model to "think aloud" before answering produces more accurate results than asking it to jump straight to an answer.</p>
+
+  <h2>What is chain of thought?</h2>
+  <p>Chain of thought (CoT) prompting guides the model to break down a problem into intermediate steps — showing its reasoning before giving a final answer. This works because the model generates each token based on the previous ones: if it "thinks out loud," later tokens benefit from that reasoning.</p>
+
+  <div class="card-grid">
+    <div class="card-sm" style="border-top:3px solid var(--danger);">
+      <h4>Without CoT</h4>
+      <p style="font-size:13px;margin:4px 0;">Prompt: "A shop sells 3 apples for $2. How much for 12?"<br><br>Model: "<strong>$6</strong>"<br><br>No reasoning shown — more likely to be wrong on harder problems.</p>
+    </div>
+    <div class="card-sm" style="border-top:3px solid var(--accent);">
+      <h4>With CoT</h4>
+      <p style="font-size:13px;margin:4px 0;">Prompt: "...Let's think step by step."<br><br>Model: "3 apples = $2, so 1 apple = $0.67. 12 apples = 12 × $0.67 = <strong>$8</strong>"<br><br>Reasoning surfaced — errors caught earlier.</p>
+    </div>
+  </div>
+
+  <h2>How to trigger chain of thought</h2>
+  <p>You don't need a special framework. A few phrases reliably activate step-by-step reasoning:</p>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin:.5rem 0 1rem;">
+    <div style="background:var(--accent-bg);border:.5px solid var(--accent-border);border-radius:8px;padding:6px 14px;font-size:13px;color:var(--accent-text);">Let's think step by step.</div>
+    <div style="background:var(--accent-bg);border:.5px solid var(--accent-border);border-radius:8px;padding:6px 14px;font-size:13px;color:var(--accent-text);">Before answering, reason through this carefully.</div>
+    <div style="background:var(--accent-bg);border:.5px solid var(--accent-border);border-radius:8px;padding:6px 14px;font-size:13px;color:var(--accent-text);">Walk me through your reasoning first.</div>
+    <div style="background:var(--accent-bg);border:.5px solid var(--accent-border);border-radius:8px;padding:6px 14px;font-size:13px;color:var(--accent-text);">Before stating your final answer, recount [X].</div>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Why this matters for agent skills</strong>
+    The self-check you'll write later — "before stating your final count, recount the bullets you just wrote" — is chain of thought applied inside a skill's instructions. You're using the same technique to make the agent verify its own work before committing to an answer.
+  </div>
+
+  <h2>When to use it</h2>
+  <ul>
+    <li><strong>Multi-step reasoning</strong> — math, logic, decision trees</li>
+    <li><strong>Classification with nuance</strong> — the model needs to weigh competing factors before deciding</li>
+    <li><strong>Self-verification</strong> — asking the model to check its own output (as in agent skills)</li>
+    <li><strong>Not needed for</strong> — simple factual lookups, short creative tasks, format transformations</li>
+  </ul>
+
+  <h2>Quick check</h2>
+  <div id="q2pe"></div>
+  <div class="nav-buttons"><button class="btn" onclick="goTo(1)">← Back</button><button class="btn btn-primary" id="next-2" onclick="goTo(3)">Next: What is an agent? →</button></div>
+</div>
+
+<!-- 3: What is an agent (was 0) -->
+<div class="section" id="s3">
+  <div class="section-tag">Foundations · 1 of 3</div>
+  <h1>What is an agent?</h1>
+  <p class="subtitle">Before building agent skills, you need to understand what agents actually are — and when to use them.</p>
+
+
+  <p>An <strong>agent</strong> is a system that independently accomplishes tasks on your behalf. Unlike a simple chatbot that responds to one message at a time, an agent can interpret intent, make decisions, call tools, and loop through steps — all without you directing every move.</p>
+
+  <div class="callout callout-info">
+    <strong>Key distinction</strong>
+    Using a chatbot or LLM that doesn't control the workflow is <em>not</em> an agentic workflow. For it to be agentic, the LLM must control how the system moves, not just respond within it.
+  </div>
+
+  <h2>When should you build an agent?</h2>
+  <p>Agents shine when you have these characteristics. Click each card to see why it matters.</p>
+
+  <div class="flip-grid">
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Complex decision-making</h4><p style="font-size:13px;color:var(--text-2);margin:0;">Multiple possible paths based on context.</p><div class="hint">Click to learn more</div></div>
+        <div class="flip-back"><div class="flip-label">Why it needs an agent</div><p>A fixed script can't handle "if X then Y else Z" reliably across varied inputs. The LLM decides the path based on the actual situation, not a hard-coded rule.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Difficult-to-maintain rules</h4><p style="font-size:13px;color:var(--text-2);margin:0;">Many edge cases or very specific conditions.</p><div class="hint">Click to learn more</div></div>
+        <div class="flip-back"><div class="flip-label">Why it needs an agent</div><p>When rules have dozens of exceptions and keep changing, maintaining them in code becomes a nightmare. An LLM with clear instructions handles edge cases gracefully.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Unstructured data</h4><p style="font-size:13px;color:var(--text-2);margin:0;">Text, emails, reviews, documents.</p><div class="hint">Click to learn more</div></div>
+        <div class="flip-back"><div class="flip-label">Why it needs an agent</div><p>Traditional code needs structured inputs. LLMs can read a messy customer review, extract the sentiment, categorize the feedback, and summarize it — no parsing logic required.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Agentic workflow steps</h2>
+  <p>When an agent handles a request, it follows a full loop. Click each step to expand it.</p>
+  <div id="wf-steps">
+    <div class="wf-step" onclick="toggleWf(0)" style="border:0.5px solid var(--border-strong);border-radius:8px;margin-bottom:6px;overflow:hidden;cursor:pointer;">
+      <div style="padding:10px 14px;display:flex;align-items:center;gap:10px;background:var(--surface);">
+        <div style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:white;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div>
+        <div style="font-size:14px;font-weight:500;">Interprets the user's intent</div>
+        <div style="margin-left:auto;color:var(--text-3);font-size:12px;" id="wf-chevron-0">▼</div>
+      </div>
+      <div id="wf-body-0" style="display:none;padding:10px 14px 12px 46px;font-size:13.5px;color:var(--text-2);border-top:0.5px solid var(--border);">What is the user actually asking for? This is where natural language understanding matters — the same goal can be phrased a dozen different ways.</div>
+    </div>
+    <div class="wf-step" onclick="toggleWf(1)" style="border:0.5px solid var(--border-strong);border-radius:8px;margin-bottom:6px;overflow:hidden;cursor:pointer;">
+      <div style="padding:10px 14px;display:flex;align-items:center;gap:10px;background:var(--surface);">
+        <div style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:white;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
+        <div style="font-size:14px;font-weight:500;">Decides whether it has enough information</div>
+        <div style="margin-left:auto;color:var(--text-3);font-size:12px;" id="wf-chevron-1">▼</div>
+      </div>
+      <div id="wf-body-1" style="display:none;padding:10px 14px 12px 46px;font-size:13.5px;color:var(--text-2);border-top:0.5px solid var(--border);">Can it complete the task with what it knows, or does it need to call a tool to get more data? This is an active decision the LLM makes, not a preset condition.</div>
+    </div>
+    <div class="wf-step" onclick="toggleWf(2)" style="border:0.5px solid var(--border-strong);border-radius:8px;margin-bottom:6px;overflow:hidden;cursor:pointer;">
+      <div style="padding:10px 14px;display:flex;align-items:center;gap:10px;background:var(--surface);">
+        <div style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:white;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
+        <div style="font-size:14px;font-weight:500;">Chooses whether to call a tool</div>
+        <div style="margin-left:auto;color:var(--text-3);font-size:12px;" id="wf-chevron-2">▼</div>
+      </div>
+      <div id="wf-body-2" style="display:none;padding:10px 14px 12px 46px;font-size:13.5px;color:var(--text-2);border-top:0.5px solid var(--border);">Search the web, query a database, call an API — the agent picks the right tool for what it needs. You define which tools are available in the agent setup.</div>
+    </div>
+    <div class="wf-step" onclick="toggleWf(3)" style="border:0.5px solid var(--border-strong);border-radius:8px;margin-bottom:6px;overflow:hidden;cursor:pointer;">
+      <div style="padding:10px 14px;display:flex;align-items:center;gap:10px;background:var(--surface);">
+        <div style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:white;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</div>
+        <div style="font-size:14px;font-weight:500;">Runs the tool and uses the results</div>
+        <div style="margin-left:auto;color:var(--text-3);font-size:12px;" id="wf-chevron-3">▼</div>
+      </div>
+      <div id="wf-body-3" style="display:none;padding:10px 14px 12px 46px;font-size:13.5px;color:var(--text-2);border-top:0.5px solid var(--border);">The tool's output is fed back to the agent. Now it decides: is this enough to answer, or does it need another tool call? This loop can run multiple times.</div>
+    </div>
+    <div class="wf-step" onclick="toggleWf(4)" style="border:0.5px solid var(--border-strong);border-radius:8px;margin-bottom:6px;overflow:hidden;cursor:pointer;">
+      <div style="padding:10px 14px;display:flex;align-items:center;gap:10px;background:var(--surface);">
+        <div style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:white;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;">5</div>
+        <div style="font-size:14px;font-weight:500;">Builds the final answer</div>
+        <div style="margin-left:auto;color:var(--text-3);font-size:12px;" id="wf-chevron-4">▼</div>
+      </div>
+      <div id="wf-body-4" style="display:none;padding:10px 14px 12px 46px;font-size:13.5px;color:var(--text-2);border-top:0.5px solid var(--border);">With all the information gathered, the agent assembles a final response in whatever format you specified in the instructions.</div>
+    </div>
+  </div>
+
+  <h2>Required reading</h2>
+  <p class="section-hint">Open each link first — the checkbox won't tick until you've opened it.</p>
+  <div class="read-check" id="rc0a" onclick="toggleRead('rc0a')">
+    <div class="box" id="rc0a-box">✓</div>
+    <div><div style="font-weight:500;font-size:14px;">A Practical Guide to Building Agents (OpenAI)</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: what agents are, when to use them, the model-tools-instructions triad</div></div>
+    <a href="https://cdn.openai.com/business-guides-and-resources/a-practical-guide-to-building-agents.pdf" target="_blank" style="margin-left:auto;font-size:12px;color:var(--accent-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation(); markOpened('rc0a')">Open ↗</a>
+  </div>
+  <div class="read-check" id="rc0b" onclick="toggleRead('rc0b')">
+    <div class="box" id="rc0b-box">✓</div>
+    <div><div style="font-weight:500;font-size:14px;">Claude Agent Skills — Overview</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: what skills are, the SKILL.md structure, how Claude discovers skills</div></div>
+    <a href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview" target="_blank" style="margin-left:auto;font-size:12px;color:var(--accent-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation(); markOpened('rc0b')">Open ↗</a>
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q0"></div>
+  <div class="nav-buttons"><button class="btn btn-primary" id="next-3" onclick="goTo(4)">Next: Anatomy of agents →</button></div>
+</div>
+
+<!-- 1: Anatomy -->
+<div class="section" id="s4">
+  <div class="section-tag">Foundations · 2 of 3</div>
+  <h1>Anatomy of an agent</h1>
+  <p class="subtitle">Every agent has three core parts. Click each card to flip it and see a concrete example.</p>
+
+  <div class="flip-grid" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="flip-card" onclick="this.classList.toggle('flipped')" style="height:180px;">
+      <div class="flip-inner">
+        <div class="flip-front" style="border-top:3px solid var(--accent);"><h4>Model</h4><p style="font-size:13px;color:var(--text-2);margin:4px 0 0;">The LLM — reasons, decides, acts. For this course: <code>gemini-2.5-flash</code>.</p><div class="hint">Click for example</div></div>
+        <div class="flip-back"><div class="flip-label">Example</div><p>When a user writes "make me something cozy for a rainy day," the model understands the mood, decides soup is more fitting than salad, and generates a matching recipe.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')" style="height:180px;">
+      <div class="flip-inner">
+        <div class="flip-front" style="border-top:3px solid var(--teal);"><h4>Tools</h4><p style="font-size:13px;color:var(--text-2);margin:4px 0 0;">External functions and APIs the agent can call — search, read a file, write to a database.</p><div class="hint">Click for example</div></div>
+        <div class="flip-back"><div class="flip-label">Example</div><p>The agent calls a <code>lookup_order()</code> tool to fetch the customer's last three transactions, then uses that data to explain why the payment failed.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')" style="height:180px;">
+      <div class="flip-inner">
+        <div class="flip-front" style="border-top:3px solid var(--coral);"><h4>Instructions</h4><p style="font-size:13px;color:var(--text-2);margin:4px 0 0;">The system prompt you write. Your prompt engineering skills go here.</p><div class="hint">Click for example</div></div>
+        <div class="flip-back"><div class="flip-label">Example</div><p>"You are a billing support agent. Always look up the order before responding. Classify each case as Refund, Retry, or Escalate. Never share raw transaction IDs."</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-info" style="margin-top:0.5rem;">
+    <strong>The model is fixed. Tools are given. Instructions are what you write.</strong>
+    Everything from Section 1 — explicit tasks, constraints, format specs, chain-of-thought — goes into the Instructions field. That's where your skill as a prompt engineer shows up.
+  </div>
+
+  <h2>Matching activity</h2>
+  <p style="font-size:14px;">Match each scenario to the agent part it best represents.</p>
+  <div id="match-rows">
+    <div class="match-row">
+      <div class="match-term">The agent searches Google for current prices</div>
+      <select class="match-select" data-answer="tools" onchange="checkMatch(this)"><option value="">— choose —</option><option value="model">Model</option><option value="tools">Tools</option><option value="instructions">Instructions</option></select>
+    </div>
+    <div class="match-row">
+      <div class="match-term">The agent decides which email deserves urgent reply</div>
+      <select class="match-select" data-answer="model" onchange="checkMatch(this)"><option value="">— choose —</option><option value="model">Model</option><option value="tools">Tools</option><option value="instructions">Instructions</option></select>
+    </div>
+    <div class="match-row">
+      <div class="match-term">"Always respond in under 50 words and use a friendly tone"</div>
+      <select class="match-select" data-answer="instructions" onchange="checkMatch(this)"><option value="">— choose —</option><option value="model">Model</option><option value="tools">Tools</option><option value="instructions">Instructions</option></select>
+    </div>
+    <div class="match-row">
+      <div class="match-term">The agent rewrites a draft email in a professional tone</div>
+      <select class="match-select" data-answer="model" onchange="checkMatch(this)"><option value="">— choose —</option><option value="model">Model</option><option value="tools">Tools</option><option value="instructions">Instructions</option></select>
+    </div>
+  </div>
+  <div id="match-result" style="display:none;margin-top:0.75rem;" class="callout callout-tip">All correct! You've got the three parts down.</div>
+  <div class="nav-buttons"><button class="btn" onclick="goTo(3)">← Back</button><button class="btn btn-primary" id="next-4" onclick="goTo(5)">Next: Agent skills →</button></div>
+</div>
+
+<!-- 2: Agent skills overview -->
+<div class="section" id="s5">
+  <div class="section-tag">Foundations · 3 of 3</div>
+  <h1>Agent skills — the big idea</h1>
+  <p class="subtitle">A skill is a reusable instruction set you write once and reuse forever, instead of re-prompting from scratch every time.</p>
+
+  <h2>A good skill has three qualities</h2>
+  <p style="font-size:14px;color:var(--text-2);">Click each card to flip it and see what "good" looks like in practice.</p>
+  <div class="flip-grid">
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Clear trigger</h4><p style="font-size:13px;color:var(--text-2);margin:0;">When should the agent use this skill?</p><div class="hint">Click for what good looks like</div></div>
+        <div class="flip-back"><div class="flip-label">Good trigger</div><p>"Use when someone provides a recipe or list of ingredients and wants a nutrition summary." — specific, actionable, matches real user language.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Clear job</h4><p style="font-size:13px;color:var(--text-2);margin:0;">What exactly does it do?</p><div class="hint">Click for what good looks like</div></div>
+        <div class="flip-back"><div class="flip-label">Good job definition</div><p>"Summarize each recipe in exactly two sentences. Output calories, protein, and the top allergen." — no ambiguity about what to produce.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Predictable output</h4><p style="font-size:13px;color:var(--text-2);margin:0;">Same structure every time.</p><div class="hint">Click for what good looks like</div></div>
+        <div class="flip-back"><div class="flip-label">Good output shape</div><p>A worked example showing exact field names — Recipe name, Two-sentence summary, Calories, Allergens — so the agent always produces the same structure.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Prompts vs. skills</h2>
+  <div class="card" style="overflow:hidden; padding:0;">
+    <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+      <thead><tr style="background:var(--surface-2);"><th style="padding:10px 16px;text-align:left;font-weight:500;color:var(--text-2);">Prompt</th><th style="padding:10px 16px;text-align:left;font-weight:500;color:var(--text-2);">Agent Skill</th></tr></thead>
+      <tbody>
+        <tr style="border-top:0.5px solid var(--border);"><td style="padding:10px 16px;color:var(--text-2);">One-time instruction for a single task</td><td style="padding:10px 16px;color:var(--text-2);">Reusable module for a <em>type</em> of task</td></tr>
+        <tr style="border-top:0.5px solid var(--border);"><td style="padding:10px 16px;color:var(--text-2);">Written in the chat window</td><td style="padding:10px 16px;color:var(--text-2);">Written in a <code>SKILL.md</code> file</td></tr>
+        <tr style="border-top:0.5px solid var(--border);"><td style="padding:10px 16px;color:var(--text-2);">Lost after the conversation</td><td style="padding:10px 16px;color:var(--text-2);">Loaded and discoverable by the agent</td></tr>
+        <tr style="border-top:0.5px solid var(--border);"><td style="padding:10px 16px;color:var(--text-2);">You direct every step</td><td style="padding:10px 16px;color:var(--text-2);">Agent decides when to use it</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="section-hint">Open the link first — the checkbox won't tick until you've opened it.</p>
+  <div class="read-check" id="rc2a" onclick="toggleRead('rc2a')">
+    <div class="box" id="rc2a-box">✓</div>
+    <div><div style="font-weight:500;font-size:14px;">Introduction to Agent Skills — Claude Docs</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Watch before moving on — see a skill in action</div></div>
+    <a href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview" target="_blank" style="margin-left:auto;font-size:12px;color:var(--accent-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation(); markOpened('rc2a')">Open ↗</a>
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q2"></div>
+  <div class="nav-buttons"><button class="btn" onclick="goTo(4)">← Back</button><button class="btn btn-primary" id="next-5" onclick="goTo(6)">Next: Skill structure →</button></div>
+</div>
+
+<!-- 3: Skill structure + real examples -->
+<div class="section" id="s6">
+  <div class="section-tag">Deep Dive · 1 of 3</div>
+  <h1>Skill structure & real examples</h1>
+  <p class="subtitle">Every skill lives in a <code>SKILL.md</code> file with YAML frontmatter. See the format, then study three real skills.</p>
+
+  <pre><span class="c">---  ← YAML frontmatter</span>
+<span class="n">name</span>: your-skill-name
+<span class="n">description</span>: &gt;
+  What it does and when to use it.
+<span class="c">---</span>
+
+<span class="k">## Instructions</span>
+[Step-by-step guidance]
+
+<span class="k">## Examples</span>
+[Concrete input → output pairs]</pre>
+
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+      <thead><tr style="background:var(--surface-2);"><th style="padding:10px 16px;text-align:left;font-weight:500;">Field</th><th style="padding:10px 16px;text-align:left;font-weight:500;">Rules</th></tr></thead>
+      <tbody>
+        <tr style="border-top:0.5px solid var(--border);"><td style="padding:10px 16px;font-family:monospace;font-size:13px;">name</td><td style="padding:10px 16px;color:var(--text-2);">Max 64 chars · lowercase, numbers, hyphens only · no "anthropic" or "claude"</td></tr>
+        <tr style="border-top:0.5px solid var(--border);"><td style="padding:10px 16px;font-family:monospace;font-size:13px;">description</td><td style="padding:10px 16px;color:var(--text-2);">Max 1,024 chars · non-empty · no XML tags · third person</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Valid vs. invalid names</h2>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin:0.5rem 0 1rem;">
+    <div style="background:var(--success-bg);border:0.5px solid var(--success-border);border-radius:8px;padding:6px 14px;font-size:13px;color:var(--success);">✓ processing-pdfs</div>
+    <div style="background:var(--success-bg);border:0.5px solid var(--success-border);border-radius:8px;padding:6px 14px;font-size:13px;color:var(--success);">✓ summarizing-recipes</div>
+    <div style="background:var(--success-bg);border:0.5px solid var(--success-border);border-radius:8px;padding:6px 14px;font-size:13px;color:var(--success);">✓ writing-reports</div>
+    <div style="background:var(--danger-bg);border:0.5px solid #f5c4b3;border-radius:8px;padding:6px 14px;font-size:13px;color:var(--danger);">✗ Helper</div>
+    <div style="background:var(--danger-bg);border:0.5px solid #f5c4b3;border-radius:8px;padding:6px 14px;font-size:13px;color:var(--danger);">✗ claude-recipe-helper</div>
+    <div style="background:var(--danger-bg);border:0.5px solid #f5c4b3;border-radius:8px;padding:6px 14px;font-size:13px;color:var(--danger);">✗ My Recipe Tool 2025</div>
+  </div>
+
+  <h2>Real skill examples</h2>
+  <p style="font-size:14px;color:var(--text-2);">Study these three real skills — notice how complexity scales from simple to full-featured.</p>
+
+  <div class="skill-tabs">
+    <button class="skill-tab active" onclick="switchSkillTab(0)">Simple</button>
+    <button class="skill-tab" onclick="switchSkillTab(1)">Medium</button>
+    <button class="skill-tab" onclick="switchSkillTab(2)">Full-featured</button>
+  </div>
+
+  <div class="skill-tab-content active" id="stab0">
+    <div style="font-size:12px;color:var(--text-3);margin-bottom:6px;">A focused, minimal skill — one job, tight output format.</div>
+    <pre style="font-size:12px;"><span class="c">---</span>
+<span class="n">name</span>: suggesting-workouts
+<span class="n">description</span>: &gt;
+  Suggests a workout type based on the user's current energy level.
+  Use when someone describes how energetic or tired they feel and
+  wants an exercise recommendation.
+<span class="c">---</span>
+
+<span class="k">## Instructions</span>
+
+You are a personal trainer. Given a description of someone's energy level,
+recommend exactly one workout type.
+
+Output format — always use exactly this structure:
+<span class="s">**Workout:** [type]
+**Why:** [one sentence, max 15 words]</span>
+
+If energy level is unclear, ask one clarifying question before recommending.
+
+<span class="k">## Examples</span>
+
+<span class="s">**Input:** I'm completely exhausted after a long week.
+**Output:**
+**Workout:** Gentle yoga
+**Why:** Low-intensity movement helps recovery without adding to fatigue.</span></pre>
+    <div class="callout callout-info" style="margin-top:0;">Notice: one persona, explicit output format with exact field names, a constraint (max 15 words), and one example. Simple but complete.</div>
+  </div>
+
+  <div class="skill-tab-content" id="stab1">
+    <div style="font-size:12px;color:var(--text-3);margin-bottom:6px;">From Claude's own best practices docs — a production PDF skill.</div>
+    <pre style="font-size:12px;"><span class="c">---</span>
+<span class="n">name</span>: processing-pdfs
+<span class="n">description</span>: &gt;
+  Extracts text and tables from PDF files, fills forms, and merges
+  documents. Use when working with PDF files or when the user
+  mentions PDFs, forms, or document extraction.
+<span class="c">---</span>
+
+<span class="k"># PDF Processing</span>
+
+<span class="k">## Quick start</span>
+
+Extract text with pdfplumber:
+<span class="s">```python
+import pdfplumber
+with pdfplumber.open("file.pdf") as pdf:
+    text = pdf.pages[0].extract_text()
+```</span>
+
+<span class="k">## Advanced features</span>
+
+<span class="s">**Form filling**: See [FORMS.md](FORMS.md)
+**API reference**: See [REFERENCE.md](REFERENCE.md)
+**Examples**: See [EXAMPLES.md](EXAMPLES.md)</span></pre>
+    <div class="callout callout-info" style="margin-top:0;">Notice: description has both what + when trigger, quick-start code in the body, and advanced detail in linked files (progressive disclosure — covered in section 7).</div>
+  </div>
+
+  <div class="skill-tab-content" id="stab2">
+    <div style="font-size:12px;color:var(--text-3);margin-bottom:6px;">A recipe summarizer — notice the chain-of-thought self-check, strict output spec, and criteria for edge cases.</div>
+    <pre style="font-size:12px;"><span class="c">---</span>
+<span class="n">name</span>: summarizing-recipes
+<span class="n">description</span>: &gt;
+  Summarizes recipes into a structured nutrition snapshot. Use when
+  given a recipe or list of ingredients and asked to summarize,
+  analyze, or extract nutritional information.
+<span class="c">---</span>
+
+<span class="k">## Instructions</span>
+
+You are a nutrition assistant. For each recipe provided:
+
+1. Read all ingredients and quantities carefully.
+2. Write exactly two sentences describing the dish and its main flavour profile.
+3. Estimate calories per serving (round to nearest 50).
+4. Identify the primary protein source.
+5. List any common allergens present (gluten, dairy, nuts, eggs, soy).
+   If none, write "none."
+
+Output format — always use exactly this structure:
+<span class="s">**Recipe:** [name]
+**Summary:** [two sentences]
+**Calories per serving:** ~[number]
+**Protein source:** [ingredient]
+**Allergens:** [list or "none"]</span>
+
+Before finalizing, re-read your summary and confirm it is exactly
+two sentences — not one, not three.
+
+<span class="k">## Examples</span>
+
+<span class="s">**Input:**
+Spaghetti carbonara — spaghetti, eggs, pancetta, parmesan, black pepper.
+
+**Output:**
+**Recipe:** Spaghetti carbonara
+**Summary:** A classic Roman pasta dish coated in a rich, silky egg and cheese sauce. Crispy pancetta adds a salty, smoky depth to every bite.
+**Calories per serving:** ~600
+**Protein source:** Eggs and pancetta
+**Allergens:** Gluten, dairy, eggs</span></pre>
+    <div class="callout callout-info" style="margin-top:0;">Notice: numbered steps with explicit criteria, strict output format with exact field names, a self-check step ("re-read your summary"), and a complete worked example.</div>
+  </div>
+
+  <h2>Knowledge check</h2>
+  <div id="q3"></div>
+  <div class="nav-buttons"><button class="btn" onclick="goTo(5)">← Back</button><button class="btn btn-primary" id="next-6" onclick="goTo(7)">Next: Writing descriptions →</button></div>
+</div>
+
+<!-- 4: Writing descriptions -->
+<div class="section" id="s7">
+  <div class="section-tag">Deep Dive · 2 of 3</div>
+  <h1>Writing effective descriptions</h1>
+  <p class="subtitle">The description field is how your agent decides <em>whether</em> to use the skill at all. It's the most critical field for discovery.</p>
+
+  <div class="callout callout-warn">
+    <strong>Always write in third person</strong>
+    The description is injected directly into the system prompt. "I can help with PDFs" breaks the system prompt's voice. Use "Processes PDF files and extracts text."
+  </div>
+
+  <h2>A good description includes:</h2>
+  <ol>
+    <li><strong>What the skill does</strong> — the action it performs</li>
+    <li><strong>When to use it</strong> — specific triggers and contexts</li>
+    <li><strong>Key terms</strong> — words a user might say that should activate it</li>
+  </ol>
+
+  <p class="section-hint" style="margin-top:-0.5rem; margin-bottom:0.75rem;">Open the link first — the checkbox won't tick until you've opened it.</p>
+  <div class="read-check" id="rc4a" onclick="toggleRead('rc4a')">
+    <div class="box" id="rc4a-box">✓</div>
+    <div><div style="font-weight:500;font-size:14px;">Best Practices — Writing effective descriptions</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Read the "Writing effective descriptions" section carefully — includes the third-person rule and trigger pattern</div></div>
+    <a href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices#writing-effective-descriptions" target="_blank" style="margin-left:auto;font-size:12px;color:var(--accent-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation(); markOpened('rc4a')">Open ↗</a>
+  </div>
+
+  <h2>Rate these descriptions</h2>
+  <p style="font-size:14px;color:var(--text-2);">Click each card to reveal the verdict.</p>
+
+  <div id="dc0" onclick="revealDesc(0)" style="cursor:pointer;">
+    <div class="card" style="border-left:3px solid var(--border-strong);">
+      <div style="font-size:13px;color:var(--text-3);margin-bottom:6px;">Description A</div>
+      <code style="font-size:13px;background:none;padding:0;">"Helps with documents"</code>
+      <div id="dc0-result" style="display:none;margin-top:10px;font-size:13.5px;color:var(--danger);">❌ Too vague. "Documents" could mean anything. No trigger words, no specific action, no context. The agent can't decide when to use this.</div>
+    </div>
+  </div>
+  <div id="dc1" onclick="revealDesc(1)" style="cursor:pointer;margin-top:-4px;">
+    <div class="card" style="border-left:3px solid var(--border-strong);">
+      <div style="font-size:13px;color:var(--text-3);margin-bottom:6px;">Description B</div>
+      <code style="font-size:13px;background:none;padding:0;">"Extracts text and tables from PDF files, fills forms, and merges documents. Use when working with PDF files or when the user mentions PDFs, forms, or document extraction."</code>
+      <div id="dc1-result" style="display:none;margin-top:10px;font-size:13.5px;color:var(--success);">✓ Excellent. States the action, names the file type, lists specific trigger phrases, and includes the "Use when" pattern. This is what the docs mean by "be specific and include key terms."</div>
+    </div>
+  </div>
+  <div id="dc2" onclick="revealDesc(2)" style="cursor:pointer;margin-top:-4px;">
+    <div class="card" style="border-left:3px solid var(--border-strong);">
+      <div style="font-size:13px;color:var(--text-3);margin-bottom:6px;">Description C</div>
+      <code style="font-size:13px;background:none;padding:0;">"I can help you process Excel files and generate reports from them."</code>
+      <div id="dc2-result" style="display:none;margin-top:10px;font-size:13.5px;color:var(--danger);">❌ Two problems: uses first person ("I can help you") and no "Use when" trigger. Fix: "Analyzes Excel spreadsheets and generates reports. Use when working with .xlsx files or when the user asks about spreadsheet data."</div>
+    </div>
+  </div>
+
+  <h2>Write your own</h2>
+  <p style="font-size:14px;">Write a description for a skill that summarizes a recipe into a two-sentence overview and lists its main allergens.</p>
+  <textarea id="desc-input" placeholder="Write a description in third person. Include what it does and when to use it..." style="min-height:80px;"></textarea>
+  <div id="desc-feedback" style="display:none;font-size:13px;margin-top:6px;"></div>
+  <button class="btn btn-sm" style="margin-top:8px;" onclick="checkDescription()">Check my description</button>
+
+  <div class="nav-buttons"><button class="btn" onclick="goTo(6)">← Back</button><button class="btn btn-primary" id="next-7" onclick="goTo(8)">Next: Instructions →</button></div>
+</div>
+<div class="section" id="s8">
+  <div class="section-tag">Deep Dive · 3 of 3</div>
+  <h1>Instructions & the examples section</h1>
+  <p class="subtitle">The instructions field is your prompt engineering in action. Everything from Section 1 applies here.</p>
+
+  <div class="card-grid">
+    <div class="card-sm"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--accent-text);background:var(--accent-bg);padding:2px 8px;border-radius:99px;">Task</span><h4 style="margin-top:8px;">Be explicit</h4><p>Don't say "summarize the recipe." Say "Write exactly two sentences describing the dish and its main flavour profile."</p></div>
+    <div class="card-sm"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--success);background:var(--success-bg);padding:2px 8px;border-radius:99px;">Format</span><h4 style="margin-top:8px;">Specify output shape</h4><p>Define the exact structure: fields, order, markdown, character limits. Leave nothing to interpretation.</p></div>
+    <div class="card-sm"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--coral);background:var(--danger-bg);padding:2px 8px;border-radius:99px;">Chain of thought</span><h4 style="margin-top:8px;">Self-check steps</h4><p>"Before stating your final count, recount the bullets above." Catches reasoning errors before output.</p></div>
+  </div>
+
+  <h2>The examples section = few-shot prompting</h2>
+  <p>The <code>## Examples</code> section is <strong>few-shot prompting built into the skill</strong>. One or two concrete input → output pairs dramatically increase reliability.</p>
+  <div class="callout callout-tip">
+    <strong>Pro tip</strong>
+    If your output format isn't landing right, add a worked example rather than just describing the shape you want. Seeing is more reliable than telling.
+  </div>
+  <p>This is also why prelab examples use separate, simpler scenarios — the workout and book examples are small enough to focus on format. The lab challenge lets you apply the same pattern to a graded, real task.</p>
+
+  <h2>Quick check</h2>
+  <div id="q5"></div>
+  <div class="nav-buttons"><button class="btn" onclick="goTo(7)">← Back</button><button class="btn btn-primary" id="next-8" onclick="goTo(9)">Next: Conciseness & freedom →</button></div>
+</div>
+<div class="section" id="s9">
+  <div class="section-tag">Best Practices · 1 of 3</div>
+  <h1>Conciseness & degrees of freedom</h1>
+  <p class="subtitle">The context window is shared. Every token in your skill competes with conversation history, other skills, and the user's request.</p>
+
+  <h2>Why conciseness matters — mechanically</h2>
+  <p>When Claude loads your skill, its contents go into the context window. That window is finite. The more tokens your skill uses, the less room there is for the actual conversation, other skills, and the user's request. <strong>This isn't just aesthetics — verbose skills can push out the context that Claude needs to do the task well.</strong></p>
+
+  <div class="callout callout-info">
+    <strong>The default assumption</strong>
+    Claude already knows how PDFs work, what JSON is, and what "classify" means. Only add context Claude doesn't already have. For every sentence, ask: "Does Claude really need this?"
+  </div>
+
+  <h2>Token cost: see the difference</h2>
+  <p style="font-size:14px;color:var(--text-2);">Both excerpts do the same thing. Watch the token bars.</p>
+  <div class="token-compare">
+    <div class="token-box">
+      <div class="tok-label bad">Verbose (~150 tokens)</div>
+      <div class="token-bar-wrap"><div class="token-bar bad" style="width:100%;"></div></div>
+      <div class="token-count">~150 tokens — leaves less room for your conversation</div>
+      <pre style="font-size:11px;margin-top:10px;">PDF (Portable Document Format) files
+are a common file format that contains
+text, images, and other content. To
+extract text from a PDF, you'll need
+to use a library. There are many
+libraries available, but pdfplumber
+is recommended because it's easy to
+use and handles most cases well.
+First, install it using pip...</pre>
+    </div>
+    <div class="token-box">
+      <div class="tok-label good">Concise (~50 tokens)</div>
+      <div class="token-bar-wrap"><div class="token-bar good" style="width:33%;"></div></div>
+      <div class="token-count">~50 tokens — 100 tokens freed up for real work</div>
+      <pre style="font-size:11px;margin-top:10px;">Extract text with pdfplumber:
+
+import pdfplumber
+with pdfplumber.open("f.pdf") as pdf:
+    text = pdf.pages[0].extract_text()
+
+
+
+(Claude already knows what a PDF is)</pre>
+    </div>
+  </div>
+  <div class="callout callout-tip" style="margin-top:0.5rem;">
+    <strong>What's wrong with the verbose version?</strong>
+    It explains what a PDF is, what libraries are, and why pdfplumber is good — none of which Claude needs. The concise version just gives the code. Same result, 67% fewer tokens.
+  </div>
+
+  <h2>Degrees of freedom</h2>
+  <p>Match how specific your instructions are to how fragile the task is.</p>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+      <thead><tr style="background:var(--surface-2);"><th style="padding:10px 16px;text-align:left;font-weight:500;">Level</th><th style="padding:10px 16px;text-align:left;font-weight:500;">Use when</th><th style="padding:10px 16px;text-align:left;font-weight:500;">Lab 1 relevance</th></tr></thead>
+      <tbody>
+        <tr style="border-top:0.5px solid var(--border);"><td style="padding:10px 16px;color:var(--success);font-weight:500;">High freedom</td><td style="padding:10px 16px;color:var(--text-2);">Multiple approaches valid; context-dependent</td><td style="padding:10px 16px;color:var(--text-2);">The two-sentence flavour description</td></tr>
+        <tr style="border-top:0.5px solid var(--border);"><td style="padding:10px 16px;color:var(--accent-text);font-weight:500;">Medium freedom</td><td style="padding:10px 16px;color:var(--text-2);">Preferred pattern with some variation OK</td><td style="padding:10px 16px;color:var(--text-2);">Calorie estimate (round to 50, but ±50 is fine)</td></tr>
+        <tr style="border-top:0.5px solid var(--border);"><td style="padding:10px 16px;color:var(--danger);font-weight:500;">Low freedom</td><td style="padding:10px 16px;color:var(--text-2);">Exact format required; consistency critical</td><td style="padding:10px 16px;color:var(--text-2);">Output field names — must match exactly every time</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q6"></div>
+  <div class="nav-buttons"><button class="btn" onclick="goTo(8)">← Back</button><button class="btn btn-primary" id="next-9" onclick="goTo(10)">Next: Progressive disclosure →</button></div>
+</div>
+
+<!-- 7: Progressive disclosure -->
+<div class="section" id="s10">
+  <div class="section-tag">Best Practices · 2 of 3</div>
+  <h1>Progressive disclosure</h1>
+  <p class="subtitle">Claude doesn't load your entire skill upfront — just the metadata. SKILL.md is a table of contents, not the full encyclopedia.</p>
+
+  <h2>The core idea</h2>
+  <p>The context window is loaded in stages. Understanding <em>what</em> is loaded <em>when</em> explains every progressive disclosure decision.</p>
+
+  <div class="ctx-stage">
+    <div class="ctx-step-label" id="ctx-label">Click through the stages to see what's in the context window at each point.</div>
+    <div class="ctx-window">
+      <div class="ctx-slot empty" id="ctx-s0">System prompt + conversation history</div>
+      <div class="ctx-slot empty" id="ctx-s1">Skill names &amp; descriptions (all skills)</div>
+      <div class="ctx-slot empty" id="ctx-s2">SKILL.md body (matched skill only)</div>
+      <div class="ctx-slot empty" id="ctx-s3">Reference file (e.g. FORMS.md — if needed)</div>
+    </div>
+    <div class="ctx-controls">
+      <button class="btn btn-sm" onclick="ctxStep(0)">Stage 1: Startup</button>
+      <button class="btn btn-sm" onclick="ctxStep(1)">Stage 2: Request arrives</button>
+      <button class="btn btn-sm" onclick="ctxStep(2)">Stage 3: Skill triggered</button>
+      <button class="btn btn-sm" onclick="ctxStep(3)">Stage 4: Advanced feature</button>
+      <button class="btn btn-sm btn-primary" onclick="ctxStep(-1)">Reset</button>
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Why this matters for how you write skills</strong>
+    The description is the <em>only thing</em> Claude sees for most skills, most of the time. SKILL.md is only read when the skill is matched. Reference files are only read when explicitly needed. Design your skill with this loading order in mind.
+  </div>
+
+  <h2>The resources folder pattern</h2>
+  <p>For larger skills, move detail into linked files. SKILL.md points to them; Claude only loads what's needed.</p>
+  <pre style="font-size:12px;"><span class="c">pdf-skill/
+  SKILL.md          ← always loaded when skill matches
+  FORMS.md          ← only loaded if user asks about forms
+  REFERENCE.md      ← only loaded if user asks for API details
+  scripts/
+    analyze_form.py ← executed directly, never loaded into context</span></pre>
+  <p style="font-size:14px;color:var(--text-2);">This structure means a skill can have comprehensive documentation without bloating the context window on every call. A form-filling question loads FORMS.md; a text extraction question doesn't. Scripts are <em>executed</em>, never read — so their size doesn't matter at all.</p>
+  <div class="callout callout-warn">
+    <strong>Keep references one level deep</strong>
+    SKILL.md → FORMS.md ✓ &nbsp;&nbsp; SKILL.md → advanced.md → details.md ✗<br>Claude may not follow nested links fully. All reference files should link directly from SKILL.md.
+  </div>
+
+  <h2>Order the stages</h2>
+  <p style="font-size:14px;color:var(--text-2);">Drag to arrange in the correct loading order.</p>
+  <ul class="sort-list" id="sortable">
+    <li class="sort-item" draggable="true" data-order="3"><span class="grip">⠿</span>Claude reads SKILL.md body and follows any linked files it needs</li>
+    <li class="sort-item" draggable="true" data-order="1"><span class="grip">⠿</span>Agent starts up — name + description of all skills loaded into system prompt</li>
+    <li class="sort-item" draggable="true" data-order="4"><span class="grip">⠿</span>Claude executes the instructions and produces output</li>
+    <li class="sort-item" draggable="true" data-order="2"><span class="grip">⠿</span>User sends a request — Claude matches it to the right skill via description</li>
+  </ul>
+  <button class="btn btn-sm" style="margin-top:8px;" onclick="checkOrder()">Check order</button>
+  <div id="order-result" style="display:none;margin-top:8px;font-size:13.5px;"></div>
+
+  <div class="nav-buttons"><button class="btn" onclick="goTo(9)">← Back</button><button class="btn btn-primary" id="next-10" onclick="goTo(11)">Next: Anti-patterns →</button></div>
+</div>
+
+<!-- 8: Anti-patterns -->
+<div class="section" id="s11">
+  <div class="section-tag">Best Practices · 3 of 3</div>
+  <h1>Anti-patterns</h1>
+  <p class="subtitle">Knowing what <em>not</em> to do is just as important. Find the anti-patterns hidden in the broken skill below — then see the fixed version.</p>
+
+  <h2>Activity: Spot the anti-patterns</h2>
+  <p style="font-size:14px;color:var(--text-2);">This SKILL.md has <strong>4 anti-patterns</strong> baked in. Click each highlighted section to identify the problem.</p>
+  <div class="ap-count">Found: <span id="ap-found">0</span> of 4</div>
+
+  <div class="broken-skill">
+<span style="color:#9cdcfe;">---</span>
+<span style="color:#9cdcfe;">name</span>: <span id="ap0" class="ap-highlight" onclick="foundAP(0)">My PDF Helper<span class="ap-tooltip">✗ Invalid name — has spaces and capitals. Must be lowercase with hyphens only.</span></span>
+<span style="color:#9cdcfe;">description</span>: &gt;
+  <span id="ap1" class="ap-highlight" onclick="foundAP(1)">I can help you extract text from PDF files and generate summaries.<span class="ap-tooltip">✗ First person ("I can help you") — descriptions must be third person.</span></span>
+<span style="color:#9cdcfe;">---</span>
+
+<span style="color:#569cd6;">## Instructions</span>
+
+<span id="ap2" class="ap-highlight" onclick="foundAP(2)">PDF stands for Portable Document Format. It is a widely used file format
+developed by Adobe. PDFs can contain text, images, tables, and forms.
+To extract text from a PDF in Python, you will need a library.<span class="ap-tooltip">✗ Over-explaining what Claude already knows — wastes tokens on facts the model has.</span></span>
+
+You can use pypdf, pdfplumber, PyMuPDF, pdf2image, pymupdf4llm, or
+<span id="ap3" class="ap-highlight" onclick="foundAP(3)">pdfminer — each works fine, choose based on your needs.<span class="ap-tooltip">✗ Too many options with no default — Claude needs a recommendation, not a menu.</span></span>
+
+<span style="color:#569cd6;">## Examples</span>
+
+See advanced.md for examples.
+  </div>
+
+  <div id="ap-all-done" style="display:none;" class="callout callout-tip" style="margin-top:0.75rem;">
+    All 4 found! Now compare with the fixed version below.
+  </div>
+
+  <h2>Fixed version</h2>
+  <div id="ap-fixed" style="display:none;">
+    <pre style="font-size:12px;"><span class="c">---</span>
+<span class="n">name</span>: extracting-pdf-text             <span class="c">← lowercase, hyphens, gerund form</span>
+<span class="n">description</span>: &gt;
+  Extracts text and tables from PDF files and generates summaries.  <span class="c">← third person</span>
+  Use when the user mentions PDFs, document extraction, or asks to
+  read or summarize a PDF file.
+<span class="c">---</span>
+
+<span class="k">## Instructions</span>
+
+<span class="c">← No PDF explainer. Claude already knows what a PDF is.</span>
+
+Extract text with pdfplumber:           <span class="c">← one default tool, not a menu</span>
+<span class="s">```python
+import pdfplumber
+with pdfplumber.open("file.pdf") as pdf:
+    text = pdf.pages[0].extract_text()
+```</span>
+For scanned PDFs requiring OCR, use pdf2image + pytesseract instead.
+
+<span class="k">## Examples</span>
+
+<span class="s">**Input:** Extract the text from report.pdf and summarize it.
+**Output:** [summary here]</span>        <span class="c">← example inline, not nested in another file</span></pre>
+    <div class="callout callout-tip">Every fix follows a principle: valid name, third person, no over-explaining, one default with a specific escape hatch, and examples in the right place.</div>
+  </div>
+  <button class="btn btn-sm" id="reveal-fixed-btn" onclick="revealFixed()" style="margin-top:8px;">Show fixed version</button>
+
+  <h2>Quick reference: anti-patterns to avoid</h2>
+  <div class="card" style="margin-bottom:10px;border-left:3px solid var(--danger);"><h3 style="color:var(--danger);margin-top:0;font-size:14px;">First-person descriptions</h3><p style="font-size:13.5px;margin:0;">❌ "I can help you…" &nbsp; ✓ "Extracts text from…"</p></div>
+  <div class="card" style="margin-bottom:10px;border-left:3px solid var(--danger);"><h3 style="color:var(--danger);margin-top:0;font-size:14px;">Too many options, no default</h3><p style="font-size:13.5px;margin:0;">❌ "You can use pypdf, pdfplumber, PyMuPDF…" &nbsp; ✓ "Use pdfplumber. For scanned PDFs, use pdf2image."</p></div>
+  <div class="card" style="margin-bottom:10px;border-left:3px solid var(--danger);"><h3 style="color:var(--danger);margin-top:0;font-size:14px;">Over-explaining what Claude knows</h3><p style="font-size:13.5px;margin:0;">❌ Defining what a PDF is. &nbsp; ✓ Just give the code.</p></div>
+  <div class="card" style="margin-bottom:10px;border-left:3px solid var(--danger);"><h3 style="color:var(--danger);margin-top:0;font-size:14px;">Deeply nested references</h3><p style="font-size:13.5px;margin:0;">❌ SKILL.md → advanced.md → details.md &nbsp; ✓ SKILL.md → ref1.md, ref2.md (one level)</p></div>
+  <div class="card" style="margin-bottom:10px;border-left:3px solid var(--danger);"><h3 style="color:var(--danger);margin-top:0;font-size:14px;">Time-sensitive information</h3><p style="font-size:13.5px;margin:0;">❌ "If you're doing this before August 2025…" &nbsp; ✓ "Current method / Old patterns (deprecated)" sections</p></div>
+
+  <div class="nav-buttons"><button class="btn" onclick="goTo(10)">← Back</button><button class="btn btn-primary" id="next-11" onclick="goTo(12)">Warmup activity →</button></div>
+</div>
+
+<!-- 9: Warmup activity -->
+<div class="section" id="s12">
+  <div class="section-tag">Activity</div>
+  <h1>Warmup activity</h1>
+  <p class="subtitle">Study a worked example, then write your own. This is separate from the lab — practice the format on a small, self-contained scenario first.</p>
+
+  <div class="callout callout-info">
+    <strong>Why a separate scenario?</strong>
+    The lab challenge has grading pressure. The warmup is intentionally simpler so you can focus entirely on getting the format right without worrying about the content. Apply what you learn here to the lab.
+  </div>
+
+  <h3>Worked example — study this</h3>
+  <pre style="font-size:12px;"><span class="c">---</span>
+<span class="n">name</span>: matching-book-moods
+<span class="n">description</span>: &gt;
+  Recommends a book genre based on a user's current mood or feeling.
+  Use when someone describes how they feel and wants a reading
+  suggestion, or asks "what should I read" with emotional context.
+<span class="c">---</span>
+
+<span class="k">## Instructions</span>
+
+You are a thoughtful librarian. When given a mood description,
+recommend exactly one book genre and explain in one sentence why.
+
+Output format — always use this structure:
+<span class="s">**Genre:** [genre name]
+**Why it fits:** [one sentence, max 20 words]</span>
+
+If the mood is unclear, ask one clarifying question before recommending.
+
+<span class="k">## Examples</span>
+
+<span class="s">**Input:** I feel restless and need an escape.
+**Output:**
+**Genre:** Adventure fiction
+**Why it fits:** Fast-paced plots pull you out of your own head into another world.</span></pre>
+
+  <hr>
+  <h3>Now you try</h3>
+  <p style="font-size:14px;color:var(--text-2);">Write a skill that <strong>suggests a type of exercise based on energy level</strong> (e.g., "I'm exhausted" → gentle yoga; "I'm buzzing with energy" → HIIT). Use the same structure.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="skill-field"><label>Skill name (lowercase, hyphens)</label><input type="text" id="wf-name" placeholder="suggesting-workouts" oninput="updateWarmup()"></div>
+      <div class="skill-field"><label>Description (third person, what + when)</label><textarea id="wf-desc" placeholder="Suggests a workout type based on the user's current energy level. Use when someone describes their energy..." oninput="updateWarmup()" style="min-height:75px;"></textarea></div>
+      <div class="skill-field"><label>Instructions (persona, output format, constraints)</label><textarea id="wf-instr" placeholder="You are a personal trainer...&#10;&#10;Output format:&#10;**Workout:** [type]&#10;**Why:** [one sentence]" oninput="updateWarmup()" style="min-height:140px;"></textarea></div>
+      <div class="skill-field"><label>Example (at least one input → output pair)</label><textarea id="wf-ex" placeholder="**Input:** I'm totally drained after work.&#10;**Output:**&#10;**Workout:** Gentle yoga&#10;**Why:** ..." oninput="updateWarmup()" style="min-height:100px;"></textarea></div>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:500;color:var(--text-3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Live preview</div>
+      <div class="skill-preview" id="warmup-preview" style="min-height:260px;font-size:11.5px;">Fill in the fields to see your skill...</div>
+      <div id="warmup-validation" style="margin-top:8px;font-size:12px;color:var(--danger);"></div>
+    </div>
+  </div>
+
+  <div style="margin-top:1.25rem;display:flex;gap:10px;align-items:center;">
+    <button class="btn btn-sm" onclick="checkWarmup()">Check my skill</button>
+    <div id="warmup-result" style="font-size:13px;"></div>
+  </div>
+
+  <h2 style="margin-top:2rem;">Reflection</h2>
+  <p style="font-size:14px;color:var(--text-2);">Answer before moving on — submit a screenshot of this in the Google Form.</p>
+  <div class="skill-field"><label>What was hardest to write, and what did you learn from the worked example?</label>
+  <textarea id="reflection" placeholder="Which field gave you the most trouble? Did the output format feel natural to specify? What would you do differently?" style="min-height:100px;"></textarea></div>
+
+  <div class="nav-buttons"><button class="btn" onclick="goTo(11)">← Back</button><button class="btn btn-primary" id="next-12" onclick="goTo(13)">Final checklist →</button></div>
+</div>
+
+<!-- 10: Checklist -->
+<div class="section" id="s13">
+  <div class="section-tag">Wrap-up</div>
+  <h1>Checklist & reflection</h1>
+  <p class="subtitle">A reference checklist for any skill you write — core quality criteria from the official best practices docs.</p>
+
+  <div class="card"><h3 style="margin-top:0;margin-bottom:1rem;">Core quality — any skill</h3><div id="checklist-core"></div></div>
+  <div class="card"><h3 style="margin-top:0;margin-bottom:1rem;">Instructions quality</h3><div id="checklist-lab"></div></div>
+  <div id="checklist-done" style="display:none;margin-top:1rem;" class="callout callout-tip">✓ All checked — you know what a good skill looks like.</div>
+
+  <h2>Final reflection</h2>
+  <p style="font-size:14px;">Looking at the SKILL.md format, which part do you think most affects whether the agent uses your skill at the right time?</p>
+  <textarea placeholder="Consider the description field, the name, the trigger phrases... what did you learn from this prelab?" style="min-height:90px;"></textarea>
+
+  <h2>Resources</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:0.5rem;">
+    <a class="ext-link" href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:var(--accent-text);text-decoration:none;font-size:13.5px;font-weight:500;padding:6px 14px;border:0.5px solid var(--accent-border);border-radius:var(--radius);background:var(--accent-bg);">Skills Overview ↗</a>
+    <a class="ext-link" href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:var(--accent-text);text-decoration:none;font-size:13.5px;font-weight:500;padding:6px 14px;border:0.5px solid var(--accent-border);border-radius:var(--radius);background:var(--accent-bg);">Best Practices ↗</a>
+    <a class="ext-link" href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices#writing-effective-descriptions" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:var(--accent-text);text-decoration:none;font-size:13.5px;font-weight:500;padding:6px 14px;border:0.5px solid var(--accent-border);border-radius:var(--radius);background:var(--accent-bg);">Writing Descriptions ↗</a>
+    <a class="ext-link" href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/quickstart" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:var(--accent-text);text-decoration:none;font-size:13.5px;font-weight:500;padding:6px 14px;border:0.5px solid var(--accent-border);border-radius:var(--radius);background:var(--accent-bg);">Quickstart ↗</a>
+    <a class="ext-link" href="https://github.com/arya-srinivasan/Leaderboard/tree/main" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:var(--accent-text);text-decoration:none;font-size:13.5px;font-weight:500;padding:6px 14px;border:0.5px solid var(--accent-border);border-radius:var(--radius);background:var(--accent-bg);">Challenge Repo ↗</a>
+  </div>
+  <div class="nav-buttons"><button class="btn" onclick="goTo(12)">← Back</button></div>
+</div>
+
+</main>
+</div>
+<script>
+let apFound = new Set();
+let sectionDone = new Set();
+let unlockedUpTo = 0;
+const quizCorrect = {};
+const openedLinks = new Set();
+
+// What each section requires before the Next button unlocks
+function requirementsFor(n) {
+  if (n === 0) return ['quiz'];          // zero-shot vs few-shot quiz
+  if (n === 1) return ['quiz','flips'];  // prompting techniques quiz + flip all cards
+  if (n === 2) return ['quiz'];          // chain of thought quiz
+  if (n === 3) return ['quiz','read'];   // what is an agent: q0 + both readings
+  if (n === 4) return ['match'];         // anatomy matching
+  if (n === 5) return ['quiz','read'];   // agent skills overview: q2 + reading
+  if (n === 6) return ['quiz'];          // skill structure: q3
+  if (n === 7) return ['desc','read'];   // descriptions: desc passes + reading
+  if (n === 8) return ['quiz'];          // instructions: q5
+  if (n === 9) return ['quiz'];          // conciseness: q6
+  if (n === 10) return ['order'];        // progressive disclosure: drag order
+  if (n === 11) return ['ap'];           // anti-patterns: all 4 found
+  if (n === 12) return ['warmup'];       // warmup skill passes
+  return [];
+}
+
+const readChecksNeeded = {
+  3: ['rc0a','rc0b'],
+  5: ['rc2a'],
+  7: ['rc4a']
+};
+const readSectionOf = {};
+Object.entries(readChecksNeeded).forEach(([sec, ids]) => ids.forEach(id => readSectionOf[id] = parseInt(sec)));
+
+const reqState = {};
+
+function markSectionRequirement(n, kind) {
+  reqState[n+'-'+kind] = true;
+  const need = requirementsFor(n);
+  const done = need.every(k => reqState[n+'-'+k]);
+  if (done) markDone(n);
+}
+
+function markDone(n) {
+  if (sectionDone.has(n)) return;
+  sectionDone.add(n);
+  const navDot = document.querySelector('.nav-item[data-section="'+n+'"]');
+  if (navDot) navDot.classList.add('done');
+  const nextBtn = document.getElementById('next-'+n);
+  if (nextBtn) nextBtn.removeAttribute('disabled');
+  while (sectionDone.has(unlockedUpTo)) unlockedUpTo++;
+  // Save to Supabase immediately when a section is completed
+  if (typeof saveProgress === 'function') saveProgress(n);
+}
+
+function goTo(n) {
+  if (n > unlockedUpTo) {
+    const item = document.querySelector('.nav-item[data-section="'+n+'"]');
+    if (item) { item.classList.add('shake'); setTimeout(() => item.classList.remove('shake'), 350); }
+    return;
+  }
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el => { el.classList.remove('active'); if (parseInt(el.dataset.section)===n) el.classList.add('active'); });
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.nav-item').forEach(el => el.addEventListener('click', () => goTo(parseInt(el.dataset.section))));
+
+// Disable all Next buttons upfront
+document.querySelectorAll('.nav-buttons .btn-primary[id^="next-"]').forEach(b => b.setAttribute('disabled','true'));
+
+// Mark opened links
+function markOpened(id) {
+  openedLinks.add(id);
+}
+
+// Read check: only toggles if link was opened first
+function toggleRead(id) {
+  const el = document.getElementById(id);
+  if (!el.classList.contains('checked') && !openedLinks.has(id)) {
+    el.classList.add('shake');
+    setTimeout(() => el.classList.remove('shake'), 350);
+    return;
+  }
+  el.classList.toggle('checked');
+  document.getElementById(id+'-box').textContent = '✓';
+  const sec = readSectionOf[id];
+  if (sec === undefined) return;
+  const needed = readChecksNeeded[sec];
+  if (needed.every(rid => document.getElementById(rid).classList.contains('checked'))) {
+    markSectionRequirement(sec, 'read');
+  }
+}
+
+
+// Matching (section 1)
+function checkMatch(sel) {
+  sel.classList.remove('correct','wrong');
+  if (!sel.value) return;
+  sel.classList.add(sel.value===sel.dataset.answer ? 'correct' : 'wrong');
+  const all = document.querySelectorAll('#match-rows .match-select');
+  if ([...all].every(s => s.value===s.dataset.answer)) {
+    document.getElementById('match-result').style.display='block';
+    markSectionRequirement(4, 'match');
+  }
+}
+// Workflow steps accordion
+function toggleWf(i) {
+  const body = document.getElementById('wf-body-'+i);
+  const chev = document.getElementById('wf-chevron-'+i);
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  chev.textContent = open ? '▼' : '▲';
+}
+function switchSkillTab(i) {
+  document.querySelectorAll('.skill-tab').forEach((t,j) => t.classList.toggle('active', j===i));
+  document.querySelectorAll('.skill-tab-content').forEach((c,j) => c.classList.toggle('active', j===i));
+}
+
+// Description reveal
+function revealDesc(i) { document.getElementById('dc'+i+'-result').style.display='block'; }
+
+// Description checker
+function checkDescription() {
+  const val = document.getElementById('desc-input').value.trim();
+  const fb = document.getElementById('desc-feedback');
+  fb.style.display = 'block';
+  if (!val) { fb.style.color='var(--danger)'; fb.textContent='Please write something first.'; return; }
+  let issues = [];
+  if (val.match(/\bI\b|\bme\b|\bmy\b/i)) issues.push('Avoid first person — use third person');
+  if (!val.match(/use when|when the user|when given|for classif|classif/i)) issues.push('Add a "Use when..." trigger phrase');
+  if (!val.match(/recipe|ingredient|summar|allergen|nutrition/i)) issues.push('Include key terms like "recipe", "summary", or "allergens"');
+  if (val.length < 50) issues.push('Too short — add more detail');
+  fb.style.color = issues.length===0 ? 'var(--success)' : 'var(--danger)';
+  fb.textContent = issues.length===0 ? '✓ Looks good! Specific, third-person, and includes a trigger.' : 'Issues: '+issues.join('; ')+'.';
+  if (issues.length===0) markSectionRequirement(7, 'desc');
+}
+
+// Context window visualiser
+const ctxLabels = [
+  "Stage 1 — Startup: The system prompt and conversation history are always in context. The names and descriptions of all your skills are also loaded here — that's it. SKILL.md bodies are not loaded yet.",
+  "Stage 2 — Request arrives: The user sends a message. Claude reads it alongside all the skill names and descriptions already in context and picks the best match.",
+  "Stage 3 — Skill triggered: Claude reads the full SKILL.md body of the matched skill. Now the instructions and examples are in context. Other skills' bodies remain unloaded.",
+  "Stage 4 — Advanced feature needed: The user asks about something covered in a linked file (e.g. FORMS.md). Claude reads just that file. The other reference files (REFERENCE.md, etc.) stay on disk — zero context cost."
+];
+function ctxStep(stage) {
+  const slots = ['ctx-s0','ctx-s1','ctx-s2','ctx-s3'];
+  const classes = ['filled-meta','filled-meta','filled-skill','filled-ref'];
+  const labels = ['System prompt + conversation history','Skill names & descriptions (all skills, always)','SKILL.md body (this skill, now triggered)','FORMS.md (advanced reference, loaded on demand)'];
+  if (stage===-1) {
+    slots.forEach(id => { const el=document.getElementById(id); el.className='ctx-slot empty'; el.textContent=el.textContent.replace('✓ ',''); });
+    document.getElementById('ctx-label').textContent='Click through the stages to see what\'s in the context window at each point.';
+    return;
+  }
+  for (let i=0;i<=stage;i++) {
+    const el = document.getElementById(slots[i]);
+    el.className = 'ctx-slot '+classes[i];
+    el.textContent = '✓ '+labels[i];
+  }
+  for (let i=stage+1;i<4;i++) {
+    const el=document.getElementById(slots[i]);
+    el.className='ctx-slot empty';
+    el.textContent=['System prompt + conversation history','Skill names & descriptions (all skills)','SKILL.md body (matched skill only)','Reference file (e.g. FORMS.md — if needed)'][i];
+  }
+  document.getElementById('ctx-label').textContent = ctxLabels[stage];
+}
+
+// Anti-pattern activity
+function foundAP(i) {
+  if (apFound.has(i)) return;
+  apFound.add(i);
+  document.getElementById('ap'+i).classList.add('found');
+  document.getElementById('ap-found').textContent = apFound.size;
+  if (apFound.size===4) {
+    document.getElementById('ap-all-done').style.display='block';
+    document.getElementById('reveal-fixed-btn').style.display='none';
+    document.getElementById('ap-fixed').style.display='block';
+    markSectionRequirement(11, 'ap');
+  }
+}
+function revealFixed() {
+  document.getElementById('ap-fixed').style.display='block';
+  document.getElementById('reveal-fixed-btn').style.display='none';
+}
+
+// Drag sort
+let dragged = null;
+document.querySelectorAll('.sort-item').forEach(item => {
+  item.addEventListener('dragstart', () => { dragged=item; item.classList.add('dragging'); });
+  item.addEventListener('dragend', () => { dragged=null; document.querySelectorAll('.sort-item').forEach(i=>i.classList.remove('dragging','over')); });
+  item.addEventListener('dragover', e => { e.preventDefault(); item.classList.add('over'); });
+  item.addEventListener('dragleave', () => item.classList.remove('over'));
+  item.addEventListener('drop', e => {
+    e.preventDefault();
+    if (dragged && dragged!==item) {
+      const list=item.parentNode, all=[...list.children], di=all.indexOf(dragged), ti=all.indexOf(item);
+      if (di<ti) list.insertBefore(dragged,item.nextSibling); else list.insertBefore(dragged,item);
+    }
+    item.classList.remove('over');
+  });
+});
+function checkOrder() {
+  const orders=[...document.querySelectorAll('#sortable .sort-item')].map(i=>parseInt(i.dataset.order));
+  const res=document.getElementById('order-result');
+  res.style.display='block';
+  const ok=JSON.stringify(orders)===JSON.stringify([1,2,3,4]);
+  res.style.color=ok?'var(--success)':'var(--danger)';
+  res.textContent=ok?'✓ Correct! Startup → match → read SKILL.md → execute.':'✗ Not quite. Think: what does the agent know first?';
+  if (ok) markSectionRequirement(10, 'order');
+}
+
+// Quizzes
+const quizzes = {
+  q0pe: { q:"You need the model to output a very specific table format it has never seen before. Which strategy is most likely to nail the format on the first try?", opts:["Zero-shot — the model knows table formats","Few-shot — show it an example of the exact table you want","Zero-shot with a long description of the format","Neither — LLMs can't do tables"], ans:1, exp:"When output format is specific and non-obvious, a concrete example is clearer than any description. Few-shot shows the model exactly what you mean." },
+  q1pe: { q:"You're building a prompt and the output keeps being too long and too formal. Which element should you add?", opts:["Task — restate what you want","Context — add more background","Tone — specify concise and conversational","Persona — a new persona will change the voice"], ans:2, exp:"Length and formality are tone properties. Adding a tone instruction directly addresses the problem. Persona can help too but Tone is the most direct lever here." },
+  q2pe: { q:"Why does chain of thought prompting improve accuracy on multi-step problems?", opts:["It gives the model more tokens, making it smarter","It forces the model to commit to one answer faster","Each reasoning step becomes context for the next — surfacing errors before the final answer","It reduces hallucination by limiting what the model can say"], ans:2, exp:"LLMs generate token by token. When the model writes out its reasoning, those tokens become context for later tokens — meaning the final answer benefits from that surfaced reasoning." },
+  q0: { q:"Which of the following is an agentic workflow?", opts:["A chatbot that answers questions one at a time","An LLM integrated into a system that it does not control","An LLM that decides which tool to call next and loops until the task is done","A human using ChatGPT to write emails"], ans:2, exp:"An agentic workflow requires the LLM to control the flow — choosing tools, looping, deciding next steps. Simply responding to prompts is not agentic." },
+  q2: { q:"What's the main advantage of a skill over a one-time prompt?", opts:["Skills use better models","Skills are reusable — the agent can discover and use them across many tasks","Skills run faster","Skills don't need examples"], ans:1, exp:"Skills are reusable instruction sets. Once written, the agent can invoke them whenever a matching task comes up — no re-prompting needed." },
+  q3: { q:"Which of these is a valid skill name?", opts:["RecipeHelper","claude-recipe-tool","summarizing-recipes","My Recipe Tool 2025"], ans:2, exp:"Skill names must be lowercase, use only hyphens (no spaces), and cannot contain 'claude' or 'anthropic'. 'summarizing-recipes' follows gerund naming convention." },
+  q5: { q:"The '## Examples' section in a skill is equivalent to which prompting technique?", opts:["Zero-shot prompting","Few-shot prompting","Chain-of-thought prompting","Role prompting"], ans:1, exp:"The examples section provides input → output pairs that teach the agent the expected format and style — exactly like few-shot prompting." },
+  q6: { q:"A skill must always output a calorie count in the format '~600 kcal'. Which degree of freedom applies?", opts:["High freedom — Claude can phrase it however it likes","Medium freedom — close enough is fine","Low freedom — specify the exact format so it's consistent every time"], ans:2, exp:"Exact output format is a 'narrow bridge' — there's only one right answer. Low freedom is correct: specify the field name and format so every run produces the same structure." }
+};
+function buildQuiz(id) {
+  const el=document.getElementById(id); if (!el) return;
+  const data=quizzes[id]; if (!data) return;
+  let html=`<div style="margin-bottom:10px;font-size:14px;font-weight:500;color:var(--text);">${data.q}</div>`;
+  data.opts.forEach((o,i) => { html+=`<div class="quiz-option" id="${id}-opt${i}" onclick="answerQuiz('${id}',${i})"><div class="letter">${'ABCD'[i]}</div>${o}</div>`; });
+  html+=`<div class="quiz-feedback" id="${id}-fb"></div>`;
+  el.innerHTML=html;
+}
+const quizToSection = { q0pe:0, q1pe:1, q2pe:2, q0:3, q2:5, q3:6, q5:8, q6:9 };
+function answerQuiz(id,chosen) {
+  const data=quizzes[id], fb=document.getElementById(id+'-fb');
+  data.opts.forEach((_,i) => { const el=document.getElementById(id+'-opt'+i); el.classList.remove('correct','wrong'); if (i===data.ans) el.classList.add('correct'); else if (i===chosen && chosen!==data.ans) el.classList.add('wrong'); });
+  fb.className='quiz-feedback show '+(chosen===data.ans?'correct':'wrong');
+  fb.textContent=(chosen===data.ans?'✓ Correct! ':'✗ Not quite. ')+data.exp;
+  if (chosen===data.ans) {
+    const sec = quizToSection[id];
+    if (sec !== undefined) markSectionRequirement(sec, 'quiz');
+  }
+}
+['q0pe','q1pe','q2pe','q0','q2','q3','q5','q6'].forEach(buildQuiz);
+
+// Flip tracking for section 1 — all 6 technique cards must be flipped
+const flipsSeenSec1 = new Set();
+function trackFlipSec1(el, idx) {
+  el.classList.toggle('flipped');
+  flipsSeenSec1.add(idx);
+  if (flipsSeenSec1.size >= 6) markSectionRequirement(1, 'flips');
+}
+
+// Warmup
+function updateWarmup() {
+  const name=document.getElementById('wf-name').value||'your-skill-name';
+  const desc=document.getElementById('wf-desc').value||'Your description here';
+  const instr=document.getElementById('wf-instr').value||'Your instructions here';
+  const ex=document.getElementById('wf-ex').value||'Your example here';
+  document.getElementById('warmup-preview').innerHTML=
+    `<span class="y">---</span>\n<span class="y">name</span>: <span class="v">${name}</span>\n<span class="y">description</span>: >\n  <span class="v">${desc.replace(/\n/g,'\n  ')}</span>\n<span class="y">---</span>\n\n<span class="c"># Instructions</span>\n\n${instr}\n\n<span class="c">## Examples</span>\n\n${ex}`;
+  const warns=[];
+  if (name && !/^[a-z0-9-]+$/.test(name)) warns.push('⚠ Name must be lowercase with hyphens only');
+  if (desc.match(/\bI\b|\bme\b|\bmy\b/)) warns.push('⚠ Description uses first person — use third person');
+  document.getElementById('warmup-validation').textContent=warns.join('  ');
+}
+function checkWarmup() {
+  const name=document.getElementById('wf-name').value.trim();
+  const desc=document.getElementById('wf-desc').value.trim();
+  const instr=document.getElementById('wf-instr').value.trim();
+  const ex=document.getElementById('wf-ex').value.trim();
+  const res=document.getElementById('warmup-result');
+  let issues=[];
+  if (!name) issues.push('missing name'); else if (!/^[a-z0-9-]+$/.test(name)) issues.push('name has invalid characters');
+  if (!desc) issues.push('missing description'); else if (desc.match(/\bI\b|\bme\b|\bmy\b/)) issues.push('description uses first person'); else if (!desc.match(/use when|when the user|when someone/i)) issues.push('description needs a "Use when..." trigger');
+  if (!instr||instr.length<40) issues.push('instructions too short — be more explicit');
+  if (!ex) issues.push('missing example');
+  res.style.color=issues.length===0?'var(--success)':'var(--danger)';
+  res.textContent=issues.length===0?'✓ Looks solid! You can move on.':'Fix: '+issues.join(', ')+'.';
+  if (issues.length===0) markSectionRequirement(12, 'warmup');
+}
+
+// Checklist
+function buildChecklist(id, items) {
+  document.getElementById(id).innerHTML=items.map((item,i)=>
+    `<label class="checklist-item" id="${id}-${i}"><input type="checkbox" onchange="toggleChecklist('${id}-${i}',this.checked);checkAllDone()">${item}</label>`
+  ).join('');
+}
+function toggleChecklist(id,done) { document.getElementById(id).classList.toggle('done',done); }
+function checkAllDone() {
+  const all=document.querySelectorAll('#s10 input[type=checkbox]');
+  document.getElementById('checklist-done').style.display=[...all].every(c=>c.checked)?'block':'none';
+}
+buildChecklist('checklist-core',[
+  'Description is written in third person (not "I can help you...")',
+  'Description includes both what the skill does AND a "Use when..." trigger',
+  'Skill name is lowercase with hyphens only, no "claude" or "anthropic"',
+  'No time-sensitive information (no "before/after [date]" language)',
+  'Consistent terminology throughout — one word for each concept',
+  'SKILL.md body is under 500 lines; detail moved to linked files if needed',
+]);
+buildChecklist('checklist-lab',[
+  'Task stated explicitly with an action verb ("classify", "recommend", "extract")',
+  'Output format fully specified — structure, field names, length limits',
+  'At least one concrete input → output example in the Examples section',
+  'Degree of freedom matches the task — low for strict formats, high for open-ended',
+  'No unnecessary explanations of things Claude already knows',
+  'References to other files are one level deep from SKILL.md (no nesting)',
+]);
+
+// ─── SUPABASE AUTH + PROGRESS ───────────────────────────────────────────────
+const SUPABASE_URL = 'https://jfjegonhtmmuublikxpk.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmamVnb25odG1tdXVibGlreHBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMTAxMDEsImV4cCI6MjEwNjY4NjEwMX0.1xEklI15Df1nRSgc9JmIz7dytqS2uWB_hV9ec2PFofM'
+const { createClient } = supabase
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+const PRELAB_ID = 'prelab-1'
+// Save every section completion individually so we can restore exact state
+// Also map to dashboard milestone IDs for progress bars
+const DASHBOARD_MILESTONES = {
+  2:  'section-1-prompting',
+  11: 'section-2-agents',
+  13: 'activities-complete',
+}
+
+let currentUser = null
+
+async function initAuth() {
+  const { data: { session } } = await db.auth.getSession()
+  if (!session) { window.location.href = '../index.html'; return }
+  currentUser = session.user
+
+  const logo = document.querySelector('.sidebar-logo')
+  const userBar = document.createElement('div')
+  userBar.style.cssText = 'padding:8px 1.25rem 0;display:flex;align-items:center;justify-content:space-between;'
+  userBar.innerHTML = `<span style="font-size:12px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;">${currentUser.email}</span><button onclick="doLogout()" style="font-size:11px;padding:3px 8px;border:0.5px solid var(--border-strong);border-radius:6px;background:none;color:var(--text-3);cursor:pointer;">Out</button>`
+  logo.appendChild(userBar)
+
+  const dashLink = document.createElement('div')
+  dashLink.style.cssText = 'padding:6px 1.25rem 0;'
+  dashLink.innerHTML = `<a href="../dashboard.html" style="font-size:12px;font-weight:500;color:var(--accent-text);text-decoration:none;display:inline-block;padding:5px 10px;background:var(--accent-bg);border:0.5px solid var(--accent-border);border-radius:6px;margin-top:2px;">← Dashboard</a>`
+  logo.appendChild(dashLink)
+
+  await restoreProgress()
+}
+
+async function restoreProgress() {
+  const { data } = await db.from('progress')
+    .select('section_id')
+    .eq('user_id', currentUser.id)
+    .eq('prelab_id', PRELAB_ID)
+
+  if (!data || data.length === 0) return
+
+  const completed = new Set(data.map(r => r.section_id))
+
+  // Restore every completed section so student resumes where they left off
+  // Section IDs are stored as 'section-N' e.g. 'section-0', 'section-5'
+  completed.forEach(sid => {
+    if (!sid.startsWith('section-')) return
+    const n = parseInt(sid.replace('section-', ''))
+    if (!isNaN(n)) {
+      // Replay markDone for each completed section to unlock Next buttons
+      sectionDone.add(n)
+      const navDot = document.querySelector('.nav-item[data-section="'+n+'"]')
+      if (navDot) { navDot.classList.add('done'); navDot.style.color = 'var(--success)'; }
+      const nextBtn = document.getElementById('next-'+n)
+      if (nextBtn) nextBtn.removeAttribute('disabled')
+    }
+  })
+
+  // Recalculate unlockedUpTo
+  while (sectionDone.has(unlockedUpTo)) unlockedUpTo++
+
+  // Navigate to the furthest unlocked section automatically
+  if (unlockedUpTo > 0) goTo(Math.min(unlockedUpTo, 13))
+}
+
+async function saveProgress(sectionN) {
+  if (!currentUser) return
+  const rows = [{ user_id: currentUser.id, prelab_id: PRELAB_ID, section_id: 'section-' + sectionN }]
+  if (DASHBOARD_MILESTONES[sectionN]) {
+    rows.push({ user_id: currentUser.id, prelab_id: PRELAB_ID, section_id: DASHBOARD_MILESTONES[sectionN] })
+  }
+  for (const row of rows) {
+    const { error } = await db.from('progress').insert(row)
+    if (error && error.code !== '23505') {
+      // 23505 = duplicate key, safe to ignore. Log anything else.
+      console.error('Progress save error:', error)
+    }
+  }
+}
+
+
+
+async function doLogout() {
+  await db.auth.signOut()
+  window.location.href = '../index.html'
+}
+
+initAuth()
+// ─────────────────────────────────────────────────────────────────────────────
+
+</script>
+</body>
+</html>

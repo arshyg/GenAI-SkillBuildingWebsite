@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Detail — GenAI SkillBuilding</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4fa; color: #1a1a1a; min-height: 100vh; }
+
+    nav { background: white; border-bottom: 1px solid #e0e8f5; padding: 0 32px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+    .nav-logo { font-size: 17px; font-weight: 600; }
+    .nav-logo span { color: #f5c100; }
+    .nav-badge { font-size: 11px; font-weight: 600; background: #1a55a8; color: white; padding: 2px 8px; border-radius: 20px; margin-left: 10px; vertical-align: middle; }
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    button.logout { padding: 6px 14px; background: transparent; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 13px; color: #666; cursor: pointer; }
+    button.logout:hover { border-color: #1a55a8; color: #1a55a8; }
+    .accent-bar { height: 3px; background: linear-gradient(90deg, #1a55a8, #f5c100); }
+
+    .container { max-width: 900px; margin: 36px auto; padding: 0 24px 60px; }
+
+    .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #1a55a8; text-decoration: none; margin-bottom: 20px; }
+    .back-link:hover { text-decoration: underline; }
+
+    .student-header { background: white; border-radius: 12px; border: 1px solid #e0e8f5; padding: 24px 28px; margin-bottom: 24px; display: flex; align-items: center; gap: 20px; }
+    .avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, #1a55a8, #f5c100); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: white; flex-shrink: 0; }
+    .student-name { font-size: 20px; font-weight: 600; }
+    .student-email { font-size: 14px; color: #888; margin-top: 3px; }
+    .student-joined { font-size: 12px; color: #bbb; margin-top: 4px; }
+
+    .overview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px; }
+    .ov-card { background: white; border-radius: 10px; border: 1px solid #e0e8f5; padding: 16px 20px; }
+    .ov-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+    .ov-value { font-size: 22px; font-weight: 700; color: #1a55a8; }
+    .ov-sub { font-size: 12px; color: #aaa; margin-top: 3px; }
+
+    .section-title { font-size: 13px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; margin-top: 32px; }
+
+    .prelab-block { background: white; border-radius: 12px; border: 1px solid #e0e8f5; margin-bottom: 16px; overflow: hidden; }
+    .prelab-header { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f0f4fa; }
+    .prelab-header-left { display: flex; align-items: center; gap: 12px; }
+    .prelab-num { font-size: 11px; font-weight: 600; color: #1a55a8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .prelab-name { font-size: 15px; font-weight: 500; }
+    .progress-pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
+    .progress-pill.complete { background: #e8f5e9; color: #2e7d32; }
+    .progress-pill.partial { background: #e8f0fe; color: #1a55a8; }
+    .progress-pill.none { background: #f5f5f5; color: #999; }
+
+    .milestone-list { padding: 4px 0; }
+    .milestone-row { display: flex; align-items: center; gap: 12px; padding: 10px 20px; border-bottom: 1px solid #f8f9fc; font-size: 14px; }
+    .milestone-row:last-child { border-bottom: none; }
+    .milestone-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .milestone-dot.done { background: #2e7d32; }
+    .milestone-dot.pending { background: #e0e0e0; }
+    .milestone-name { flex: 1; color: #333; }
+    .milestone-name.done { color: #1a1a1a; }
+    .milestone-name.pending { color: #aaa; }
+    .milestone-time { font-size: 12px; color: #aaa; }
+
+    .quiz-block { background: white; border-radius: 12px; border: 1px solid #e0e8f5; margin-bottom: 16px; overflow: hidden; }
+    .quiz-header { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f0f4fa; }
+    .quiz-title { font-size: 15px; font-weight: 500; }
+    .quiz-score-big { font-size: 18px; font-weight: 700; }
+    .quiz-score-big.high { color: #2e7d32; }
+    .quiz-score-big.mid { color: #b8860b; }
+    .quiz-score-big.low { color: #c0392b; }
+    .quiz-not-taken { padding: 20px; font-size: 14px; color: #aaa; text-align: center; }
+
+    .answer-row { display: flex; align-items: flex-start; gap: 14px; padding: 12px 20px; border-bottom: 1px solid #f8f9fc; font-size: 13px; }
+    .answer-row:last-child { border-bottom: none; }
+    .answer-num { font-size: 11px; font-weight: 600; color: #aaa; min-width: 24px; margin-top: 2px; }
+    .answer-body { flex: 1; }
+    .answer-q { color: #555; margin-bottom: 4px; line-height: 1.4; }
+    .answer-given { display: flex; align-items: center; gap: 6px; }
+    .answer-text { font-weight: 500; }
+    .answer-text.correct { color: #2e7d32; }
+    .answer-text.wrong { color: #c0392b; }
+    .answer-icon { font-size: 13px; }
+    .correct-note { font-size: 12px; color: #888; margin-top: 3px; }
+
+    .loading { text-align: center; padding: 60px; color: #aaa; }
+    .bar-bg { height: 6px; background: #e0e8f5; border-radius: 4px; overflow: hidden; margin-top: 8px; }
+    .bar-fill { height: 100%; background: linear-gradient(90deg, #1a55a8, #f5c100); border-radius: 4px; }
+
+    .toggle-header { cursor: pointer; user-select: none; }
+    .toggle-header:hover { background: #f8f9fc; }
+    .toggle-arrow { font-size: 12px; color: #aaa; transition: transform 0.2s; display: inline-block; }
+    .toggle-arrow.open { transform: rotate(90deg); }
+    .toggle-body { display: none; }
+    .toggle-body.open { display: block; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">GenAI <span>SkillBuilding</span><span class="nav-badge">Instructor</span></div>
+  <div class="nav-right">
+    <a href="dashboard.html" style="padding:6px 14px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:13px;color:#666;text-decoration:none;transition:all 0.15s;" onmouseover="this.style.borderColor='#1a55a8';this.style.color='#1a55a8'" onmouseout="this.style.borderColor='#e0e0e0';this.style.color='#666'">← Dashboard</a>
+    <button class="logout" onclick="doLogout()">Log out</button>
+  </div>
+</nav>
+<div class="accent-bar"></div>
+
+<div class="container">
+  <a class="back-link" href="instructor.html">← All students</a>
+
+  <div id="loading" class="loading">Loading student data...</div>
+  <div id="main" style="display:none">
+
+    <div class="student-header">
+      <div class="avatar" id="avatar"></div>
+      <div>
+        <div class="student-name" id="student-name"></div>
+        <div class="student-email" id="student-email"></div>
+        <div class="student-joined" id="student-joined"></div>
+      </div>
+    </div>
+
+    <div class="overview-grid">
+      <div class="ov-card">
+        <div class="ov-label">Overall progress</div>
+        <div class="ov-value" id="ov-progress">—</div>
+        <div class="bar-bg"><div class="bar-fill" id="ov-bar" style="width:0%"></div></div>
+        <div class="ov-sub">across all prelabs</div>
+      </div>
+      <div class="ov-card">
+        <div class="ov-label">Quizzes submitted</div>
+        <div class="ov-value" id="ov-quizzes">—</div>
+        <div class="ov-sub" id="ov-quiz-avg"></div>
+      </div>
+      <div class="ov-card">
+        <div class="ov-label">Last active</div>
+        <div class="ov-value" id="ov-active" style="font-size:16px;margin-top:4px;">—</div>
+        <div class="ov-sub" id="ov-active-sub"></div>
+      </div>
+    </div>
+
+    <div class="section-title">Prelab Progress</div>
+    <div id="prelab-blocks"></div>
+
+    <div class="section-title">Quiz Results</div>
+    <div id="quiz-blocks"></div>
+
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://jfjegonhtmmuublikxpk.supabase.co'
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmamVnb25odG1tdXVibGlreHBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMTAxMDEsImV4cCI6MjEwNjY4NjEwMX0.1xEklI15Df1nRSgc9JmIz7dytqS2uWB_hV9ec2PFofM'
+  const { createClient } = supabase
+  const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+  // Section labels map to granular section-N IDs saved by the prelab files
+  const PRELAB_CONFIG = [
+    {
+      id: 'prelab-1', name: 'Intro to Prompt Engineering & Agent Skills',
+      milestones: [
+        { id: 'section-0',  label: 'Zero-shot vs few-shot' },
+        { id: 'section-1',  label: 'Prompting techniques' },
+        { id: 'section-2',  label: 'Chain of thought' },
+        { id: 'section-3',  label: 'What is an agent?' },
+        { id: 'section-4',  label: 'Anatomy of agents' },
+        { id: 'section-5',  label: 'Agent skills overview' },
+        { id: 'section-6',  label: 'Skill structure & examples' },
+        { id: 'section-7',  label: 'Writing descriptions' },
+        { id: 'section-8',  label: 'Instructions & prompting' },
+        { id: 'section-9',  label: 'Conciseness & freedom' },
+        { id: 'section-10', label: 'Progressive disclosure' },
+        { id: 'section-11', label: 'Anti-patterns' },
+        { id: 'section-12', label: 'Warmup activity' },
+        { id: 'section-13', label: 'Checklist & reflection' },
+      ]
+    },
+    {
+      id: 'prelab-2', name: 'Agent Skill Design Patterns',
+      milestones: [
+        { id: 'section-0',  label: 'Modularity — the big idea' },
+        { id: 'section-1',  label: 'Subagents in depth' },
+        { id: 'section-2',  label: 'Workflow patterns' },
+        { id: 'section-3',  label: 'Delegation & subagents' },
+        { id: 'section-4',  label: 'Loop patterns' },
+        { id: 'section-5',  label: 'Deterministic scripts' },
+        { id: 'section-6',  label: 'Chaining skills' },
+        { id: 'section-7',  label: 'Activity 1: Trip planner' },
+        { id: 'section-8',  label: 'Activity 2: Add a loop' },
+        { id: 'section-9',  label: 'Activity 3: Det. script' },
+        { id: 'section-10', label: 'Activity 4: Chain skills' },
+        { id: 'section-11', label: 'Reflection' },
+      ]
+    },
+    {
+      id: 'prelab-3', name: 'Evaluating & Optimizing Agent Skills',
+      milestones: [
+        { id: 'section-0', label: 'Why evaluate at all?' },
+        { id: 'section-1', label: 'Two jobs for an eval suite' },
+        { id: 'section-2', label: 'Grading methods' },
+        { id: 'section-3', label: 'Deterministic checks' },
+        { id: 'section-4', label: 'LLM-as-a-judge' },
+        { id: 'section-5', label: 'GEPA / optimizer' },
+        { id: 'section-6', label: 'Observability & tools' },
+        { id: 'section-7', label: 'Watch-outs' },
+        { id: 'section-8', label: 'Build a test suite' },
+        { id: 'section-9', label: 'Checklist & reflection' },
+      ]
+    },
+  ]
+
+  const QUIZ_CONFIG = [
+    { id: 'prelab-1-quiz', name: 'Prelab 1 Quiz', total: 10 },
+    { id: 'prelab-2-quiz', name: 'Prelab 2 Quiz', total: 10 },
+    { id: 'prelab-3-quiz', name: 'Prelab 3 Quiz', total: 10 },
+  ]
+
+  // Must match question order in quiz files
+  const QUIZ_QUESTIONS = {
+    'prelab-1-quiz': [
+      { q: "What is prompt engineering?", opts: ["Writing code to call AI APIs","Designing and revising prompts to guide AI models toward more useful outputs","Training a new AI model from scratch","Selecting which AI model to use for a task"], ans: 1 },
+      { q: "Which prompting strategy gives the AI a task with no examples?", opts: ["Few-shot prompting","Chain-of-thought prompting","Zero-shot prompting","Role prompting"], ans: 2 },
+      { q: "When should you reach for few-shot instead of zero-shot?", opts: ["Always — few-shot is always better","When the output format is flexible and the task is simple","When the output needs a specific structure the model might not guess on its own","Only when working with images"], ans: 2 },
+      { q: "Which of these is NOT one of the six common prompting elements?", opts: ["Persona","Tone","Token limit","Format"], ans: 2 },
+      { q: "What does Chain of Thought (CoT) prompting do?", opts: ["Speeds up the model's response time","Guides the model to break down a problem into intermediate steps before answering","Gives the model multiple examples to learn from","Forces the model to use bullet points"], ans: 1 },
+      { q: "Which phrase reliably activates chain-of-thought reasoning?", opts: ['"Answer as fast as possible."','"Give me a one-word answer."','"Let\'s think step by step."','"Use JSON format."'], ans: 2 },
+      { q: "What makes something an agentic workflow?", opts: ["It uses a more powerful AI model","The LLM controls how the workflow moves, not just responds to prompts","It always connects to the internet","It generates images as well as text"], ans: 1 },
+      { q: "What are the three parts of an agent?", opts: ["Prompt, response, feedback","Model, tools, instructions","Input, processing, output","Training data, weights, inference"], ans: 1 },
+      { q: "What is an agent skill?", opts: ["A one-time prompt for a specific task","A Python function that calls an API","A reusable instruction set an agent can discover and use across many tasks","A fine-tuned model for a specific domain"], ans: 2 },
+      { q: "What should a skill's description always include?", opts: ["The author's name and version number","Both what the skill does AND a 'Use when...' trigger","A list of all possible inputs","The exact output format in JSON"], ans: 1 },
+    ]
+  }
+
+  function getStudentId() {
+    return new URLSearchParams(window.location.search).get('id')
+  }
+
+  function formatDate(d) {
+    if (!d) return '—'
+    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  function timeAgo(d) {
+    if (!d) return 'Never'
+    const diff = Math.floor((new Date() - new Date(d)) / 1000)
+    if (diff < 3600) return `${Math.floor(diff/60)}m ago`
+    if (diff < 86400) return `${Math.floor(diff/3600)}h ago`
+    if (diff < 604800) return `${Math.floor(diff/86400)}d ago`
+    return formatDate(d)
+  }
+
+  async function init() {
+    const { data: { session } } = await db.auth.getSession()
+    if (!session) { window.location.href = 'index.html'; return }
+
+    const { data: myProfile } = await db.from('profiles').select('role').eq('id', session.user.id).single()
+    if (!myProfile || myProfile.role !== 'instructor') { window.location.href = 'dashboard.html'; return }
+
+    const studentId = getStudentId()
+    if (!studentId) { window.location.href = 'instructor.html'; return }
+
+    await loadStudent(studentId)
+  }
+
+  async function loadStudent(studentId) {
+    const [profileRes, progressRes, quizRes] = await Promise.all([
+      db.from('profiles').select('*').eq('id', studentId).single(),
+      db.from('progress').select('*').eq('user_id', studentId),
+      db.from('quiz_results').select('*').eq('user_id', studentId),
+    ])
+
+    const profile = profileRes.data
+    const progress = progressRes.data || []
+    const quizzes = quizRes.data || []
+
+    if (!profile) { window.location.href = 'instructor.html'; return }
+
+    // Build lookups
+    const progressMap = {}
+    progress.forEach(r => {
+      if (!progressMap[r.prelab_id]) progressMap[r.prelab_id] = {}
+      progressMap[r.prelab_id][r.section_id] = r.completed_at
+    })
+
+    const quizMap = {}
+    quizzes.forEach(r => {
+      if (!quizMap[r.quiz_id] || r.submitted_at > quizMap[r.quiz_id].submitted_at) quizMap[r.quiz_id] = r
+    })
+
+    // Render header
+    const initials = (profile.full_name || profile.email).split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2)
+    document.getElementById('avatar').textContent = initials
+    document.getElementById('student-name').textContent = profile.full_name || '—'
+    document.getElementById('student-email').textContent = profile.email
+    document.getElementById('student-joined').textContent = `Joined ${formatDate(profile.created_at)}`
+
+    // Overview stats
+    const totalMilestones = PRELAB_CONFIG.reduce((a, p) => a + p.milestones.length, 0)
+    const doneMilestones = PRELAB_CONFIG.reduce((a, p) => {
+      const pm = progressMap[p.id] || {}
+      return a + p.milestones.filter(m => pm[m.id]).length
+    }, 0)
+    const overallPct = Math.round((doneMilestones / totalMilestones) * 100)
+    document.getElementById('ov-progress').textContent = overallPct + '%'
+    document.getElementById('ov-bar').style.width = overallPct + '%'
+
+    const quizCount = Object.keys(quizMap).length
+    const quizAvg = quizCount ? Math.round(
+      Object.values(quizMap).reduce((a, q) => a + (q.score / q.total) * 100, 0) / quizCount
+    ) : null
+    document.getElementById('ov-quizzes').textContent = `${quizCount}/3`
+    document.getElementById('ov-quiz-avg').textContent = quizAvg !== null ? `Avg score: ${quizAvg}%` : 'None submitted yet'
+
+    const allDates = [
+      ...progress.map(r => r.completed_at),
+      ...quizzes.map(r => r.submitted_at)
+    ].filter(Boolean).sort().reverse()
+    const lastActive = allDates[0] || null
+    document.getElementById('ov-active').textContent = lastActive ? timeAgo(lastActive) : 'Never'
+    document.getElementById('ov-active-sub').textContent = lastActive ? formatDate(lastActive) : ''
+
+    // Prelab blocks
+    const prelabHtml = PRELAB_CONFIG.map(prelab => {
+      const pm = progressMap[prelab.id] || {}
+      const done = prelab.milestones.filter(m => pm[m.id]).length
+      const pct = Math.round((done / prelab.milestones.length) * 100)
+      const pillClass = pct === 100 ? 'complete' : pct > 0 ? 'partial' : 'none'
+      const pillText = pct === 100 ? '✓ Complete' : pct > 0 ? `${done}/${prelab.milestones.length} sections` : 'Not started'
+
+      const rows = prelab.milestones.map(m => {
+        const ts = pm[m.id]
+        const isDone = !!ts
+        return `
+          <div class="milestone-row">
+            <div class="milestone-dot ${isDone ? 'done' : 'pending'}"></div>
+            <div class="milestone-name ${isDone ? 'done' : 'pending'}">${m.label}</div>
+            <div class="milestone-time">${isDone ? formatDate(ts) : '—'}</div>
+          </div>`
+      }).join('')
+
+      const blockId = `prelab-toggle-${prelab.id}`
+      return `
+        <div class="prelab-block">
+          <div class="prelab-header toggle-header" onclick="toggleBlock('${blockId}')">
+            <div class="prelab-header-left">
+              <span class="toggle-arrow" id="arrow-${blockId}">▶</span>
+              <div style="margin-left:8px;">
+                <div class="prelab-num">${prelab.id.replace('-', ' ').replace('prelab', 'Prelab')}</div>
+                <div class="prelab-name">${prelab.name}</div>
+              </div>
+            </div>
+            <span class="progress-pill ${pillClass}">${pillText}</span>
+          </div>
+          <div class="milestone-list toggle-body" id="${blockId}">${rows}</div>
+        </div>`
+    }).join('')
+    document.getElementById('prelab-blocks').innerHTML = prelabHtml
+
+    // Quiz blocks
+    const quizHtml = QUIZ_CONFIG.map(quiz => {
+      const result = quizMap[quiz.id]
+      const blockId = `quiz-toggle-${quiz.id}`
+
+      if (!result) {
+        return `
+          <div class="quiz-block">
+            <div class="quiz-header toggle-header" onclick="toggleBlock('${blockId}')">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="toggle-arrow" id="arrow-${blockId}">▶</span>
+                <div class="quiz-title">${quiz.name}</div>
+              </div>
+              <span style="font-size:13px;color:#aaa;">Not submitted</span>
+            </div>
+            <div class="toggle-body" id="${blockId}">
+              <div class="quiz-not-taken">Student has not taken this quiz yet.</div>
+            </div>
+          </div>`
+      }
+
+      const pct = Math.round((result.score / result.total) * 100)
+      const cls = pct >= 80 ? 'high' : pct >= 60 ? 'mid' : 'low'
+      const questions = QUIZ_QUESTIONS[quiz.id] || []
+      const answers = result.answers || []
+
+      const answerRows = questions.map((q, i) => {
+        const chosen = answers[i]
+        const isCorrect = chosen === q.ans
+        const chosenText = chosen !== null && chosen !== undefined ? q.opts[chosen] : 'No answer'
+        const correctText = q.opts[q.ans]
+        return `
+          <div class="answer-row">
+            <div class="answer-num">Q${i+1}</div>
+            <div class="answer-body">
+              <div class="answer-q">${q.q}</div>
+              <div class="answer-given">
+                <span class="answer-icon">${isCorrect ? '✅' : '❌'}</span>
+                <span class="answer-text ${isCorrect ? 'correct' : 'wrong'}">${chosenText}</span>
+              </div>
+              ${!isCorrect ? `<div class="correct-note">Correct: ${correctText}</div>` : ''}
+            </div>
+          </div>`
+      }).join('')
+
+      return `
+        <div class="quiz-block">
+          <div class="quiz-header toggle-header" onclick="toggleBlock('${blockId}')">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="toggle-arrow" id="arrow-${blockId}">▶</span>
+              <div class="quiz-title">${quiz.name}</div>
+            </div>
+            <div>
+              <span class="quiz-score-big ${cls}">${result.score}/${result.total} (${pct}%)</span>
+              <div style="font-size:11px;color:#aaa;text-align:right;margin-top:2px;">Submitted ${formatDate(result.submitted_at)}</div>
+            </div>
+          </div>
+          <div class="toggle-body" id="${blockId}">${answerRows}</div>
+        </div>`
+    }).join('')
+    document.getElementById('quiz-blocks').innerHTML = quizHtml
+
+    document.getElementById('loading').style.display = 'none'
+    document.getElementById('main').style.display = 'block'
+  }
+
+  function toggleBlock(id) {
+    const body = document.getElementById(id)
+    const arrow = document.getElementById('arrow-' + id)
+    const isOpen = body.classList.contains('open')
+    body.classList.toggle('open', !isOpen)
+    arrow.classList.toggle('open', !isOpen)
+  }
+
+  async function doLogout() {
+    await db.auth.signOut()
+    window.location.href = 'index.html'
+  }
+
+  init()
+</script>
+</body>
+</html>
