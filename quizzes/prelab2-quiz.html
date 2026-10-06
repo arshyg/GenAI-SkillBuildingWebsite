@@ -114,44 +114,44 @@ let currentUser = null
 
 const QUESTIONS = [
   {
-    q: "What is the core idea behind modularity in agent systems?",
+    q: "One agent handles research, drafting, and citation formatting for reports. Every time you tweak its instructions to fix citations, the research quality gets worse. What does this most suggest?",
     opts: [
-      "One large agent that handles everything is more reliable",
-      "Breaking a system into focused, independent agents that each do one job well",
-      "Agents should always share the same instructions",
-      "Modularity only applies to code, not to agent design"
-    ],
-    ans: 1
-  },
-  {
-    q: "What is a subagent?",
-    opts: [
-      "A backup agent that runs when the main agent fails",
-      "A smaller agent that a parent/orchestrator agent delegates specific tasks to",
-      "An agent that runs without any instructions",
-      "A human who supervises an AI agent"
-    ],
-    ans: 1
-  },
-  {
-    q: "Which of these is a valid reason to use a loop pattern in an agentic workflow?",
-    opts: [
-      "When you want the agent to run exactly once and stop",
-      "When the agent needs to retry or refine its output until a quality threshold is met",
-      "When you want to reduce the number of API calls",
-      "Loops should never be used in agent workflows"
-    ],
-    ans: 1
-  },
-  {
-    q: "What is a deterministic script in the context of agent skills?",
-    opts: [
-      "A script that uses random sampling to generate responses",
-      "An LLM prompt that always produces the same answer",
-      "A fixed, predictable piece of code extracted from the agent for operations where consistency is critical",
-      "A script that determines which agent to use"
+      "You need a larger model that can handle all three jobs at once",
+      "You should add more examples of good citations to the same prompt",
+      "The jobs should be split into focused agents or skills so changing one doesn't break the others",
+      "You should lower the temperature so the agent is more consistent"
     ],
     ans: 2
+  },
+  {
+    q: "An orchestrator agent must summarize 30 long documents. Its summaries get noticeably worse for the later documents as its context fills up. What is the best fix?",
+    opts: [
+      "Delegate each document to a subagent that returns a short summary, then have the orchestrator combine them",
+      "Put all 30 documents in one prompt and tell the agent to be thorough",
+      "Raise the max token limit so the orchestrator can write longer answers",
+      "Run the orchestrator twice and keep whichever result is longer"
+    ],
+    ans: 0
+  },
+  {
+    q: "You build a loop: a writer revises a draft until a reviewer agent approves it. Sometimes it runs 20+ rounds without finishing. What is the best fix?",
+    opts: [
+      "Remove the reviewer and accept the writer's first draft",
+      "Add a maximum number of rounds and give the reviewer clear, checkable pass criteria",
+      "Make the reviewer stricter so it catches more problems",
+      "Run several writer agents in parallel and pick one at random"
+    ],
+    ans: 1
+  },
+  {
+    q: "An expense-report workflow has four steps. Which one should be a deterministic script instead of an LLM step?",
+    opts: [
+      "Reading receipt photos and pulling out the vendor and amount",
+      "Judging whether a purchase looks unusual for this employee",
+      "Writing a friendly summary email to the employee",
+      "Adding up the amounts and checking the total against a $500 policy limit"
+    ],
+    ans: 3
   },
   {
     q: "When should you extract logic into a deterministic script instead of letting the LLM handle it?",
@@ -164,42 +164,42 @@ const QUESTIONS = [
     ans: 2
   },
   {
-    q: "What does 'chaining skills' mean?",
+    q: "You chain Skill A (extract action items from meeting notes) into Skill B (create calendar tasks). Skill B often fails because Skill A sometimes returns a bullet list and sometimes a paragraph. What is the best fix?",
     opts: [
-      "Running the same skill multiple times in a row",
-      "Connecting the output of one skill as the input to another to complete a multi-step workflow",
-      "Combining two skills into one large skill file",
-      "Using a skill only after another skill has failed"
+      "Merge both skills into one large skill file",
+      "Run Skill B twice and keep whichever attempt succeeds",
+      "Tell Skill B to be flexible about whatever format it receives",
+      "Give Skill A a fixed output format that matches what Skill B expects, such as a list with owner, task, and due date"
+    ],
+    ans: 3
+  },
+  {
+    q: "A research agent hands off to a writing agent by passing 40 pages of raw notes with the message 'Here's what I found.' The articles keep missing key points. What is the best improvement?",
+    opts: [
+      "Pass even more raw notes so the writer has full context",
+      "Pass a structured handoff: the key findings, their sources, and what the writer should produce",
+      "Have the writing agent redo the research itself",
+      "Tell the writing agent to read the notes more carefully"
     ],
     ans: 1
   },
   {
-    q: "What is the handoff in a multi-agent workflow?",
+    q: "An agent writes SQL queries that run against a live production database. Where is a verification step most valuable?",
     opts: [
-      "When a human takes over from the agent",
-      "The data or context one agent passes to the next agent in the chain",
-      "The final output delivered to the user",
-      "A rollback to the previous agent's state"
+      "After the query is written and before it runs, to check it is valid and read-only",
+      "After the results are shown to the user",
+      "At the very start, before the agent writes anything",
+      "Only after a user reports a problem"
     ],
-    ans: 1
+    ans: 0
   },
   {
-    q: "Which workflow pattern is best for a task that needs to check its own output for quality before proceeding?",
+    q: "A task: clean up a raw interview transcript, then pull the best quotes from it, then draft a blog post from those quotes. Which pattern fits best?",
     opts: [
-      "Single-pass pattern",
-      "Delegation pattern",
-      "Verification loop pattern",
-      "Chaining pattern"
-    ],
-    ans: 2
-  },
-  {
-    q: "Why is it important to specify what data is passed between agents in a handoff?",
-    opts: [
-      "It isn't — agents can figure it out themselves",
-      "So the receiving agent has the exact context it needs to complete its task correctly",
-      "To reduce the number of tokens used",
-      "Only for debugging purposes"
+      "Single-pass: one prompt does everything at once",
+      "Chaining: each step's output becomes the next step's input",
+      "Verification loop: repeat until a reviewer approves",
+      "Parallel delegation: three subagents work on it at the same time"
     ],
     ans: 1
   },
