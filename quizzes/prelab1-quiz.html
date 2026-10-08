@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Prelab 1 Quiz — GenAI SkillBuilding</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+
 <style>
   :root {
     --bg: #f8f7f4; --surface: #ffffff; --surface-2: #f1efe8;
@@ -137,18 +139,13 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/client.js"></script>
+<script src="../js/quiz.js"></script>
 <script>
-// ─── SUPABASE ────────────────────────────────────────────────────────────────
-const SUPABASE_URL = 'https://jfjegonhtmmuublikxpk.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmamVnb25odG1tdXVibGlreHBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMTAxMDEsImV4cCI6MjEwNjY4NjEwMX0.1xEklI15Df1nRSgc9JmIz7dytqS2uWB_hV9ec2PFofM'
-const { createClient } = supabase
-const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+// ─── Page config ─────────────────────────────────────────────────────────────
 const QUIZ_ID = 'prelab-1-quiz'
-let currentUser = null
-// ─────────────────────────────────────────────────────────────────────────────
 
-// ─── QUESTIONS ───────────────────────────────────────────────────────────────
-// Fill these in when ready — answer index is 0-based
 const QUESTIONS = [
   {
     q: "What is prompt engineering?",
@@ -243,114 +240,21 @@ const QUESTIONS = [
 ]
 // ─────────────────────────────────────────────────────────────────────────────
 
-const userAnswers = new Array(QUESTIONS.length).fill(null)
+const EXPLANATIONS = [
+  "Prompt engineering is specifically about designing and revising prompts — it's not about training models or writing API code.",
+  "Zero-shot means no examples are given. The model relies entirely on its prior training.",
+  "Few-shot shines when you need a specific output structure the model might not infer on its own.",
+  "The six elements are: task, context, example, persona, format, and tone. Token limit is not one of them.",
+  "Chain of thought guides the model to reason step by step, improving accuracy on complex tasks.",
+  "'Let's think step by step' is the canonical CoT trigger phrase shown to reliably activate step-by-step reasoning.",
+  "An agentic workflow requires the LLM to control the flow — not just respond, but decide what happens next.",
+  "The three parts of an agent are model (the LLM), tools (external functions), and instructions (the system prompt).",
+  "An agent skill is a reusable instruction set — unlike a one-time prompt, it's designed to be discovered and used across many tasks.",
+  "A good description includes what the skill does AND a 'Use when...' trigger so the agent knows when to activate it.",
+]
 
-function buildQuiz() {
-  const body = document.getElementById('quiz-body')
-  body.innerHTML = QUESTIONS.map((q, qi) => `
-    <div class="question-card" id="qcard-${qi}">
-      <div class="q-number">Question ${qi + 1} of ${QUESTIONS.length}</div>
-      <div class="q-text">${q.q}</div>
-      ${q.opts.map((opt, oi) => `
-        <div class="option" id="opt-${qi}-${oi}" onclick="selectAnswer(${qi}, ${oi})">
-          <div class="opt-letter">${'ABCD'[oi]}</div>
-          <span>${opt}</span>
-        </div>
-      `).join('')}
-    </div>
-  `).join('')
-}
-
-function selectAnswer(qi, oi) {
-  // Deselect previous
-  QUESTIONS[qi].opts.forEach((_, i) => {
-    document.getElementById(`opt-${qi}-${i}`).classList.remove('selected')
-  })
-  userAnswers[qi] = oi
-  document.getElementById(`opt-${qi}-${oi}`).classList.add('selected')
-}
-
-async function submitQuiz() {
-  const unanswered = userAnswers.filter(a => a === null).length
-  if (unanswered > 0) {
-    alert(`Please answer all questions. You have ${unanswered} unanswered.`)
-    return
-  }
-
-  const btn = document.getElementById('submit-btn')
-  btn.disabled = true
-  btn.textContent = 'Submitting...'
-
-  // Score it
-  let score = 0
-  QUESTIONS.forEach((q, qi) => { if (userAnswers[qi] === q.ans) score++ })
-
-  // Show correct/wrong on each option
-  QUESTIONS.forEach((q, qi) => {
-    q.opts.forEach((_, oi) => {
-      const el = document.getElementById(`opt-${qi}-${oi}`)
-      el.classList.add('disabled')
-      el.classList.remove('selected')
-      if (oi === q.ans) el.classList.add('correct')
-      else if (oi === userAnswers[qi] && userAnswers[qi] !== q.ans) el.classList.add('wrong')
-    })
-  })
-
-  // Save to Supabase
-  await db.from('quiz_results').insert({
-    user_id: currentUser.id,
-    quiz_id: QUIZ_ID,
-    score,
-    total: QUESTIONS.length,
-    answers: userAnswers
-  })
-
-  // Show results
-  document.getElementById('submit-row').style.display = 'none'
-  const pct = Math.round((score / QUESTIONS.length) * 100)
-  document.getElementById('score-big').textContent = `${score}/${QUESTIONS.length}`
-  document.getElementById('score-label').textContent = `${pct}% — ${pct >= 80 ? 'Great work! 🎉' : pct >= 60 ? 'Good effort — review the sections you missed.' : 'Review the prelab and check in with your instructor.'}`
-  document.getElementById('score-bar').style.width = pct + '%'
-  const card = document.getElementById('results-card')
-  card.classList.add('show')
-  card.scrollIntoView({ behavior: 'smooth' })
-}
-
-async function initAuth() {
-  const { data: { session } } = await db.auth.getSession()
-  if (!session) { window.location.href = '../index.html'; return }
-  currentUser = session.user
-  document.getElementById('user-email').textContent = currentUser.email
-
-  // Check if already submitted
-  const { data } = await db.from('quiz_results')
-    .select('score, total, submitted_at')
-    .eq('user_id', currentUser.id)
-    .eq('quiz_id', QUIZ_ID)
-    .order('submitted_at', { ascending: false })
-    .limit(1)
-
-  if (data && data.length > 0) {
-    const r = data[0]
-    const pct = Math.round((r.score / r.total) * 100)
-    const date = new Date(r.submitted_at).toLocaleDateString()
-    document.getElementById('prev-score-text').textContent =
-      `You scored ${r.score}/${r.total} (${pct}%) on ${date}. Your instructor has your submission.`
-    document.getElementById('already-submitted').style.display = 'block'
-    document.getElementById('submit-row').style.display = 'none'
-    // Make all options unclickable
-    document.querySelectorAll('.option').forEach(el => el.classList.add('disabled'))
-  }
-
-  buildQuiz()
-}
-
-async function doLogout() {
-  await db.auth.signOut()
-  window.location.href = '../index.html'
-}
-
-initAuth()
+// Boot
+initQuizAuth()
 </script>
 </body>
 </html>

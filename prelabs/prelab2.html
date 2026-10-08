@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Prelab 2 — GenAI SkillBuilding</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
 
 <style>
   :root {
@@ -56,13 +57,15 @@
   .callout-info{background:var(--accent-bg);border-color:var(--accent);color:var(--accent-text);}
   .callout-tip{background:var(--purple-bg);border-color:var(--purple);color:var(--purple-text);}
   .callout-warn{background:var(--warning-bg);border-color:#ba7517;color:var(--warning-text);}
-  .callout-colab{background:#fff8e6;border-color:#f0b429;color:#7a4f00;border-left:3px solid #f0b429;}
+  
   .callout strong{font-weight:500;display:block;margin-bottom:2px;}
   code{font-family:var(--mono);font-size:12.5px;background:var(--surface-2);padding:1px 5px;border-radius:4px;color:var(--text);}
   pre{background:#1e1e1e;color:#d4d4d4;border-radius:8px;padding:1rem 1.25rem;font-family:var(--mono);font-size:12px;line-height:1.65;overflow-x:auto;margin:1rem 0;}
   pre .c{color:#6a9955;}pre .k{color:#569cd6;}pre .s{color:#ce9178;}pre .n{color:#9cdcfe;}pre .y{color:#9cdcfe;}
   .quiz-option{display:flex;align-items:flex-start;gap:10px;padding:.75rem 1rem;border:.5px solid var(--border-strong);border-radius:8px;margin-bottom:8px;cursor:pointer;transition:.15s;font-size:14px;color:var(--text-2);background:var(--surface);}
   .quiz-option:hover{border-color:var(--accent-border);background:var(--accent-bg);}
+  .quiz-option.selected{border-color:var(--accent);background:var(--accent-bg);color:var(--accent-text);}
+  .quiz-option.selected .letter{background:var(--accent);color:white;}
   .quiz-option.correct{border-color:var(--success);background:var(--success-bg);color:var(--success);}
   .quiz-option.wrong{border-color:var(--danger);background:var(--danger-bg);color:var(--danger);}
   .quiz-option .letter{width:20px;height:20px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;color:var(--text-3);margin-top:1px;}
@@ -154,6 +157,7 @@
 </style>
 </head>
 <body>
+
 <div class="app">
 <nav class="sidebar">
   <div class="sidebar-logo">
@@ -184,13 +188,7 @@
   <div class="section-tag">Foundations · 1 of 3</div>
   <h1>Modularity — the big idea</h1>
   <p class="subtitle">Everything in this prelab flows from one principle: break a complex task into the smallest possible specialized units, then wire them together.</p>
-
-  <div class="callout callout-colab">
-    <strong>This prelab has a companion Colab</strong>
-    Read and do the activities here first — concepts, design, and written exercises. Then open the Colab to run actual code, test your skills with a real model, and see the patterns in action. They're designed to be used together.
-  </div>
-
-  <h2>Why one big agent breaks down</h2>
+<h2>Why one big agent breaks down</h2>
   <p>A single agent handling a large task has four compounding problems. Each one gets worse as the task grows.</p>
   <div class="card-grid">
     <div class="card-sm" style="border-top:3px solid var(--coral);">
@@ -254,12 +252,12 @@
     </div>
     <div class="card-sm" style="border-top:3px solid var(--accent);">
       <h4>Spawned by instructions</h4>
-      <p>The parent skill's instructions tell Claude to spawn a subagent and what to pass it. This is what we're building in this prelab.</p>
+      <p>The parent skill's instructions tell the orchestrator to spawn a subagent and what to pass it. This is what we're building in this prelab.</p>
     </div>
   </div>
 
   <h2>How spawning works</h2>
-  <p>When a skill's instructions say "spawn a subagent for X," Claude creates a new isolated agent call, passes it a specific input, and waits for the structured result. The parent then uses that result to continue.</p>
+  <p>When a skill's instructions say "spawn a subagent for X," the orchestrator creates a new isolated agent call, passes it a specific input, and waits for the structured result. The parent then uses that result to continue.</p>
 
   <div class="agent-diagram">
     <div class="agent-box orchestrator">Parent skill (orchestrator)<br><span style="font-size:11px;font-weight:400;opacity:.8;">reads instructions, decides to delegate</span></div>
@@ -312,7 +310,7 @@ Do not add commentary, preambles, or caveats. Three options only.</pre>
   <p class="section-hint">Open each link first — the checkbox won't tick until you've opened it.</p>
   <div class="read-check" id="rc1a" onclick="toggleRead('rc1a')">
     <div class="box" id="rc1a-box">✓</div>
-    <div><div style="font-weight:500;font-size:14px;">Claude Subagents — Platform Docs</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: how subagents are spawned, isolated context, input/output contracts</div></div>
+    <div><div style="font-weight:500;font-size:14px;">Subagents — Platform Docs</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: how subagents are spawned, isolated context, input/output contracts</div></div>
     <a href="https://platform.claude.com/docs/en/agent-sdk/subagents" target="_blank" style="margin-left:auto;font-size:12px;color:var(--accent-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation();markOpened('rc1a')">Open ↗</a>
   </div>
   <div class="read-check" id="rc1b" onclick="toggleRead('rc1b')">
@@ -493,7 +491,7 @@ Run steps 1–3 in parallel when possible to reduce total time.</pre>
   </div>
 
   <h2>Verification loop — in a skill</h2>
-  <p>Adding a verification loop to a skill means instructing Claude to check its own output before finalizing it. The check can be a rule ("is this under 100 words?") or a judgment ("does this cover all the points the user asked for?").</p>
+  <p>Adding a verification loop to a skill means instructing the agent to check its own output before finalizing it. The check can be a rule ("is this under 100 words?") or a judgment ("does this cover all the points the user asked for?").</p>
 
   <pre style="font-size:12px;"><span class="k">## Instructions</span>
 
@@ -515,7 +513,7 @@ Run steps 1–3 in parallel when possible to reduce total time.</pre>
   <p class="section-hint">Open the link first — the checkbox won't tick until you've opened it.</p>
   <div class="read-check" id="rc4a" onclick="toggleRead('rc4a')">
     <div class="box" id="rc4a-box">✓</div>
-    <div><div style="font-weight:500;font-size:14px;">Getting Started with Loops — Claude Blog</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: loop types, stopping conditions, max-retry patterns</div></div>
+    <div><div style="font-weight:500;font-size:14px;">Getting Started with Loops</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: loop types, stopping conditions, max-retry patterns</div></div>
     <a href="https://claude.com/blog/getting-started-with-loops" target="_blank" style="margin-left:auto;font-size:12px;color:var(--accent-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation();markOpened('rc4a')">Open ↗</a>
   </div>
 
@@ -572,7 +570,7 @@ Run steps 1–3 in parallel when possible to reduce total time.</pre>
   </div>
 
   <h2>How to reference a script in a skill</h2>
-  <p>You don't paste script code into the skill. You give the path and tell Claude exactly which function to call and what it returns.</p>
+  <p>You don't paste script code into the skill. You give the path and specify exactly which function to call and what it returns.</p>
 
   <pre style="font-size:12px;"><span class="k">## Instructions</span>
 
@@ -592,7 +590,7 @@ Do NOT estimate or count manually — always use the script.</pre>
   <p class="section-hint">Open the link first — the checkbox won't tick until you've opened it.</p>
   <div class="read-check" id="rc5a" onclick="toggleRead('rc5a')">
     <div class="box" id="rc5a-box">✓</div>
-    <div><div style="font-weight:500;font-size:14px;">Agent Skills Overview — Claude Platform</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: the scripts section — how skills reference and execute deterministic scripts</div></div>
+    <div><div style="font-weight:500;font-size:14px;">Agent Skills Overview</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: the scripts section — how skills reference and execute deterministic scripts</div></div>
     <a href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview" target="_blank" style="margin-left:auto;font-size:12px;color:var(--accent-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation();markOpened('rc5a')">Open ↗</a>
   </div>
 
@@ -658,7 +656,7 @@ Do NOT estimate or count manually — always use the script.</pre>
   <p class="section-hint">Open the link first — the checkbox won't tick until you've opened it.</p>
   <div class="read-check" id="rc6a" onclick="toggleRead('rc6a')">
     <div class="box" id="rc6a-box">✓</div>
-    <div><div style="font-weight:500;font-size:14px;">Building Verification Loops with Skills — Claude Blog</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: skill chaining patterns, verification loops built from chained skills</div></div>
+    <div><div style="font-weight:500;font-size:14px;">Building Verification Loops with Skills</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: skill chaining patterns, verification loops built from chained skills</div></div>
     <a href="https://claude.com/blog/building-verification-loops-in-claude-code-with-skills" target="_blank" style="margin-left:auto;font-size:12px;color:var(--accent-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation();markOpened('rc6a')">Open ↗</a>
   </div>
 
@@ -671,14 +669,8 @@ Do NOT estimate or count manually — always use the script.</pre>
 <div class="section" id="s7">
   <div class="section-tag">Activity 1 of 4</div>
   <h1>Design a trip planning system</h1>
-  <p class="subtitle">Apply delegation by designing a trip planner with three subagents. You'll use this design in the Colab to build and run the actual skills.</p>
-
-  <div class="callout callout-colab">
-    <strong>Colab connection</strong>
-    Complete the design here first, then open the Colab — Cell 1 walks you through implementing exactly this system with real code.
-  </div>
-
-  <h3>Step 1 — Name your subagents</h3>
+  <p class="subtitle">Apply delegation by designing a trip planner with three subagents. </p>
+<h3>Step 1 — Name your subagents</h3>
   <p style="font-size:14px;color:var(--text-2);">Fill in a skill name (lowercase, hyphens) and one-sentence job description for each subagent.</p>
 
   <div class="card" style="margin-bottom:12px;">
@@ -706,7 +698,7 @@ Do NOT estimate or count manually — always use the script.</pre>
   </div>
 
   <h3 style="margin-top:1.5rem;">Step 2 — Write the orchestrator instructions</h3>
-  <p style="font-size:14px;color:var(--text-2);">Write the <code>## Instructions</code> section for the parent <code>planning-trip</code> skill. It should tell Claude which subagents to spawn, what to pass each one, whether they run in parallel or sequentially, and how to assemble the final output.</p>
+  <p style="font-size:14px;color:var(--text-2);">Write the <code>## Instructions</code> section for the parent <code>planning-trip</code> skill. It should specify which subagents to spawn, what to pass each one, whether they run in parallel or sequentially, and how to assemble the final output.</p>
   <textarea id="a1-instr" placeholder="## Instructions&#10;&#10;You are a trip planning coordinator. Given a destination, travel dates, and budget:&#10;&#10;1. Spawn the [subagent-name] subagent with: ...&#10;2. ..." style="min-height:160px;"></textarea>
 
   <h3 style="margin-top:1.5rem;">Live preview</h3>
@@ -726,13 +718,7 @@ Do NOT estimate or count manually — always use the script.</pre>
   <div class="section-tag">Activity 2 of 4</div>
   <h1>Add a verification loop</h1>
   <p class="subtitle">Improve the itinerary subagent from Activity 1 by adding a loop so it checks its own output before returning.</p>
-
-  <div class="callout callout-colab">
-    <strong>Colab connection</strong>
-    After writing your loop instructions here, open the Colab — Cell 2 lets you run both versions (with and without the loop) and compare the outputs directly.
-  </div>
-
-  <h3>Choose your loop type</h3>
+<h3>Choose your loop type</h3>
   <p style="font-size:14px;color:var(--text-2);">Which loop type makes the most sense for an itinerary subagent? Select one and explain why.</p>
 
   <div id="loop-choice" style="margin-bottom:1rem;">
@@ -759,13 +745,7 @@ Do NOT estimate or count manually — always use the script.</pre>
   <div class="section-tag">Activity 3 of 4</div>
   <h1>Build a deterministic script skill</h1>
   <p class="subtitle">Practice the pattern of referencing a script in a skill — without relying on the LLM for something that has one right answer.</p>
-
-  <div class="callout callout-colab">
-    <strong>Colab connection</strong>
-    Cell 3 in the Colab has the actual Python scripts for you to run. You'll see the difference between asking the LLM to count vs. running the script directly.
-  </div>
-
-  <h3>Scenario: word count checker</h3>
+<h3>Scenario: word count checker</h3>
   <p style="font-size:14px;color:var(--text-2);">You're building a skill that summarizes articles and must keep summaries under 100 words. The word count check should be deterministic — not left to the LLM.</p>
 
   <h3>Step 1 — Spot what should be a script</h3>
@@ -797,13 +777,7 @@ Do NOT estimate or count manually — always use the script.</pre>
   <div class="section-tag">Activity 4 of 4</div>
   <h1>Chain the trip planner into a pipeline</h1>
   <p class="subtitle">Decompose the monolithic <code>planning-trip</code> orchestrator into a chain of skills — each handing off to the next.</p>
-
-  <div class="callout callout-colab">
-    <strong>Colab connection</strong>
-    Cell 4 in the Colab lets you run the chained version of the trip planner and trace the full call sequence end to end.
-  </div>
-
-  <h3>Step 1 — Design the chain</h3>
+<h3>Step 1 — Design the chain</h3>
   <p style="font-size:14px;color:var(--text-2);">Below are four skills in a trip planning chain. Drag them into the correct order — which skill should call which next?</p>
 
   <ul class="chain-list" id="chain-sortable">
@@ -840,13 +814,13 @@ Do NOT estimate or count manually — always use the script.</pre>
   <div class="card" style="margin-bottom:1rem;">
     <div style="font-size:12px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Question 1</div>
     <p style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:8px;">In your trip planner design, why does each subagent need to receive the budget explicitly even though the orchestrator already knows it?</p>
-    <textarea placeholder="Because subagents have isolated contexts — they have no access to the parent's state or conversation history. Each call is stateless, so everything the subagent needs must be passed in explicitly." style="min-height:90px;"></textarea>
+    <textarea id="reflect-stateless" placeholder="Because subagents have isolated contexts — they have no access to the parent's state or conversation history. Each call is stateless, so everything the subagent needs must be passed in explicitly." style="min-height:90px;"></textarea>
   </div>
 
   <div class="card" style="margin-bottom:1rem;">
     <div style="font-size:12px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Question 2</div>
     <p style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:8px;">You added a verification loop to the itinerary subagent. What is one thing you would add to make the loop more reliable, and why?</p>
-    <textarea placeholder="Think about: max retry count, what happens when max is reached, whether the criteria are deterministic or judgment-based..." style="min-height:90px;"></textarea>
+    <textarea id="reflect-loops" placeholder="Think about: max retry count, what happens when max is reached, whether the criteria are deterministic or judgment-based..." style="min-height:90px;"></textarea>
   </div>
 
   <h2>Resources</h2>
@@ -1014,7 +988,7 @@ function checkA1(){
 
 // Activity 2 — Loop
 let loopChosen=null;
-const loopAnswers={1:"Both B and C work, but they serve different goals. B (conditional) is best for mechanical criteria like activity count — it's objective and fast. C (evaluator) is better for quality judgments. A (fixed) generates variety but doesn't improve quality.",0:"Fixed loops generate multiple options but don't actually improve quality — they just give you three versions to choose from manually. For the itinerary to get better, you need a check that identifies what's wrong.",2:"An evaluator loop works well for quality judgments, but for mechanical criteria like 'every day has at least 2 activities,' a conditional loop is simpler and more reliable — no need to invoke a separate LLM judge just to count activities."};
+const loopAnswers={1:"Correct! A conditional loop is best here — the criteria (every day has at least 2 activities) is mechanical and objective, so you don't need a separate judge. The loop keeps regenerating until the check passes.",0:"Fixed loops generate multiple options but don't actually improve quality — they just give you three versions to choose from manually. For the itinerary to get better, you need a check that identifies what's wrong.",2:"An evaluator loop works well for subjective quality judgments, but for a mechanical criterion like 'every day has at least 2 activities,' a conditional loop is simpler and more reliable — no need to invoke a separate LLM judge just to count activities."};
 
 function selectLoop(i){
   [0,1,2].forEach(j=>{document.getElementById('lc'+j).classList.remove('correct','wrong');});
@@ -1120,60 +1094,23 @@ function checkA4(){
   if(issues.length===0){markSectionRequirement(10,'handoff');markSectionRequirement(10,'chain');}
 }
 
+// ─── Page config ─────────────────────────────────────────────────────────────
 const PRELAB_ID = 'prelab-2'
-const SUPABASE_URL = 'https://jfjegonhtmmuublikxpk.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmamVnb25odG1tdXVibGlreHBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMTAxMDEsImV4cCI6MjEwNjY4NjEwMX0.1xEklI15Df1nRSgc9JmIz7dytqS2uWB_hV9ec2PFofM'
-const { createClient } = supabase
-const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-let currentUser = null
-
-async function initAuth() {
-  const { data: { session } } = await db.auth.getSession()
-  if (!session) { window.location.href = '../index.html'; return }
-  currentUser = session.user
-  const logo = document.querySelector('.sidebar-logo')
-  const userBar = document.createElement('div')
-  userBar.style.cssText = 'padding:8px 1.25rem 0;display:flex;align-items:center;justify-content:space-between;'
-  userBar.innerHTML = `<span style="font-size:12px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;">${currentUser.email}</span><button onclick="doLogout()" style="font-size:11px;padding:3px 8px;border:0.5px solid var(--border-strong);border-radius:6px;background:none;color:var(--text-3);cursor:pointer;">Out</button>`
-  logo.appendChild(userBar)
-  const dashLink = document.createElement('div')
-  dashLink.style.cssText = 'padding:6px 1.25rem 0;'
-  dashLink.innerHTML = `<a href="../dashboard.html" style="font-size:12px;font-weight:500;color:var(--accent-text);text-decoration:none;display:inline-block;padding:5px 10px;background:var(--accent-bg);border:0.5px solid var(--accent-border);border-radius:6px;margin-top:2px;">← Dashboard</a>`
-  logo.appendChild(dashLink)
-  await restoreProgress()
+const PRELAB_LABEL = 'Prelab 2'
+const MAX_SECTION = 11
+const DASHBOARD_MILESTONES = {
+  2:  'section-1-foundations',
+  6:  'section-2-patterns',
+  11: 'activities-complete',
 }
 
-async function restoreProgress() {
-  const { data } = await db.from('progress').select('section_id').eq('user_id', currentUser.id).eq('prelab_id', PRELAB_ID)
-  if (!data || data.length === 0) return
-  const completed = new Set(data.map(r => r.section_id))
-  completed.forEach(sid => {
-    if (!/^section-\d+$/.test(sid)) return
-    const n = parseInt(sid.replace('section-', ''))
-    if (isNaN(n)) return
-    sectionDone.add(n)
-    const dot = document.querySelector('.nav-item[data-section="'+n+'"] .dot')
-    if (dot) dot.parentElement.classList.add('done')
-    const btn = document.getElementById('next-'+n)
-    if (btn) btn.removeAttribute('disabled')
-  })
-  while (sectionDone.has(unlockedUpTo)) unlockedUpTo++
-  if (unlockedUpTo > 0) goTo(Math.min(unlockedUpTo, 11))
-}
-
-async function saveProgress(sectionN) {
-  if (!currentUser) return
-  const { error } = await db.from('progress').insert({
-    user_id: currentUser.id, prelab_id: PRELAB_ID, section_id: 'section-' + sectionN
-  })
-  if (error && error.code !== '23505') console.error('Progress save error:', error)
-}
-
-async function doLogout() {
-  await db.auth.signOut()
-  window.location.href = '../index.html'
-}
-
+// Boot
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/client.js"></script>
+<script src="../js/prelab.js"></script>
+<script>
+injectTopNav()
 initAuth()
 </script>
 </body>

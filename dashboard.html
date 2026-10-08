@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GenAI SkillBuilding: Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4fa; color: #1a1a1a; min-height: 100vh; }
@@ -145,11 +146,10 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/client.js"></script>
 <script>
-  const SUPABASE_URL = 'https://jfjegonhtmmuublikxpk.supabase.co'
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmamVnb25odG1tdXVibGlreHBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMTAxMDEsImV4cCI6MjEwNjY4NjEwMX0.1xEklI15Df1nRSgc9JmIz7dytqS2uWB_hV9ec2PFofM'
-  const { createClient } = supabase
-  const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
 
   // Milestones per prelab — must match what the prelab files save
   const PRELAB_CONFIG = {
@@ -200,9 +200,10 @@
     Object.entries(PRELAB_CONFIG).forEach(([prelabId, cfg]) => {
       const completed = byPrelab[prelabId] || new Set()
       // Count only granular section IDs (section-0, section-1, etc.)
+      const isSubmitted = completed.has('submitted')
       const done = [...completed].filter(s => /^section-\d+$/.test(s)).length
       const total = cfg.total
-      const pct = Math.round((Math.min(done, total) / total) * 100)
+      const pct = isSubmitted ? 100 : Math.round((Math.min(done, total) / total) * 100)
 
       document.getElementById(cfg.barId).style.width = pct + '%'
 

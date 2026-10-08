@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Prelab 1 — GenAI SkillBuilding</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+
 <style>
   :root {
     --bg: #f8f7f4; --surface: #ffffff; --surface-2: #f1efe8;
@@ -54,7 +56,7 @@
   .callout-info { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
   .callout-tip { background: var(--success-bg); border-color: var(--success); color: var(--success); }
   .callout-warn { background: var(--warning-bg); border-color: #ba7517; color: var(--warning-text); }
-  .callout-colab { background: #fff8e6; border-color: #f0b429; color: #7a4f00; border-left: 3px solid #f0b429; }
+
   .callout strong { font-weight: 500; display: block; margin-bottom: 2px; }
   code { font-family: var(--mono); font-size: 12.5px; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; color: var(--text); }
   pre { background: #1e1e1e; color: #d4d4d4; border-radius: 8px; padding: 1rem 1.25rem; font-family: var(--mono); font-size: 12.5px; line-height: 1.65; overflow-x: auto; margin: 1rem 0; }
@@ -181,6 +183,7 @@
 </style>
 </head>
 <body>
+
 <div class="app">
 <nav class="sidebar">
   <div class="sidebar-logo">
@@ -474,7 +477,7 @@
   </div>
   <div class="read-check" id="rc0b" onclick="toggleRead('rc0b')">
     <div class="box" id="rc0b-box">✓</div>
-    <div><div style="font-weight:500;font-size:14px;">Claude Agent Skills — Overview</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: what skills are, the SKILL.md structure, how Claude discovers skills</div></div>
+    <div><div style="font-weight:500;font-size:14px;">Agent Skills — Overview</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: what skills are, the SKILL.md structure, how the agent discovers skills</div></div>
     <a href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview" target="_blank" style="margin-left:auto;font-size:12px;color:var(--accent-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation(); markOpened('rc0b')">Open ↗</a>
   </div>
 
@@ -584,7 +587,7 @@
   <p class="section-hint">Open the link first — the checkbox won't tick until you've opened it.</p>
   <div class="read-check" id="rc2a" onclick="toggleRead('rc2a')">
     <div class="box" id="rc2a-box">✓</div>
-    <div><div style="font-weight:500;font-size:14px;">Introduction to Agent Skills — Claude Docs</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Watch before moving on — see a skill in action</div></div>
+    <div><div style="font-weight:500;font-size:14px;">Introduction to Agent Skills — Docs</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Watch before moving on — see a skill in action</div></div>
     <a href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview" target="_blank" style="margin-left:auto;font-size:12px;color:var(--accent-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation(); markOpened('rc2a')">Open ↗</a>
   </div>
 
@@ -615,7 +618,7 @@
     <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
       <thead><tr style="background:var(--surface-2);"><th style="padding:10px 16px;text-align:left;font-weight:500;">Field</th><th style="padding:10px 16px;text-align:left;font-weight:500;">Rules</th></tr></thead>
       <tbody>
-        <tr style="border-top:0.5px solid var(--border);"><td style="padding:10px 16px;font-family:monospace;font-size:13px;">name</td><td style="padding:10px 16px;color:var(--text-2);">Max 64 chars · lowercase, numbers, hyphens only · no "anthropic" or "claude"</td></tr>
+        <tr style="border-top:0.5px solid var(--border);"><td style="padding:10px 16px;font-family:monospace;font-size:13px;">name</td><td style="padding:10px 16px;color:var(--text-2);">Max 64 chars · lowercase, numbers, hyphens only · no reserved words like "anthropic" or "claude"</td></tr>
         <tr style="border-top:0.5px solid var(--border);"><td style="padding:10px 16px;font-family:monospace;font-size:13px;">description</td><td style="padding:10px 16px;color:var(--text-2);">Max 1,024 chars · non-empty · no XML tags · third person</td></tr>
       </tbody>
     </table>
@@ -671,7 +674,7 @@ If energy level is unclear, ask one clarifying question before recommending.
   </div>
 
   <div class="skill-tab-content" id="stab1">
-    <div style="font-size:12px;color:var(--text-3);margin-bottom:6px;">From Claude's own best practices docs — a production PDF skill.</div>
+    <div style="font-size:12px;color:var(--text-3);margin-bottom:6px;">From the official best practices docs — a production PDF skill.</div>
     <pre style="font-size:12px;"><span class="c">---</span>
 <span class="n">name</span>: processing-pdfs
 <span class="n">description</span>: &gt;
@@ -836,11 +839,11 @@ Spaghetti carbonara — spaghetti, eggs, pancetta, parmesan, black pepper.
   <p class="subtitle">The context window is shared. Every token in your skill competes with conversation history, other skills, and the user's request.</p>
 
   <h2>Why conciseness matters — mechanically</h2>
-  <p>When Claude loads your skill, its contents go into the context window. That window is finite. The more tokens your skill uses, the less room there is for the actual conversation, other skills, and the user's request. <strong>This isn't just aesthetics — verbose skills can push out the context that Claude needs to do the task well.</strong></p>
+  <p>When the agent loads your skill, its contents go into the context window. That window is finite. The more tokens your skill uses, the less room there is for the actual conversation, other skills, and the user's request. <strong>This isn't just aesthetics — verbose skills can push out the context that the agent needs to do the task well.</strong></p>
 
   <div class="callout callout-info">
     <strong>The default assumption</strong>
-    Claude already knows how PDFs work, what JSON is, and what "classify" means. Only add context Claude doesn't already have. For every sentence, ask: "Does Claude really need this?"
+    the model already knows how PDFs work, what JSON is, and what "classify" means. Only add context the agent doesn't already have. For every sentence, ask: "Does the agent really need this?"
   </div>
 
   <h2>Token cost: see the difference</h2>
@@ -872,12 +875,12 @@ with pdfplumber.open("f.pdf") as pdf:
 
 
 
-(Claude already knows what a PDF is)</pre>
+(the model already knows what a PDF is)</pre>
     </div>
   </div>
   <div class="callout callout-tip" style="margin-top:0.5rem;">
     <strong>What's wrong with the verbose version?</strong>
-    It explains what a PDF is, what libraries are, and why pdfplumber is good — none of which Claude needs. The concise version just gives the code. Same result, 67% fewer tokens.
+    It explains what a PDF is, what libraries are, and why pdfplumber is good — none of which the agent needs. The concise version just gives the code. Same result, 67% fewer tokens.
   </div>
 
   <h2>Degrees of freedom</h2>
@@ -902,7 +905,7 @@ with pdfplumber.open("f.pdf") as pdf:
 <div class="section" id="s10">
   <div class="section-tag">Best Practices · 2 of 3</div>
   <h1>Progressive disclosure</h1>
-  <p class="subtitle">Claude doesn't load your entire skill upfront — just the metadata. SKILL.md is a table of contents, not the full encyclopedia.</p>
+  <p class="subtitle">The agent doesn't load your entire skill upfront — just the metadata. SKILL.md is a table of contents, not the full encyclopedia.</p>
 
   <h2>The core idea</h2>
   <p>The context window is loaded in stages. Understanding <em>what</em> is loaded <em>when</em> explains every progressive disclosure decision.</p>
@@ -926,11 +929,11 @@ with pdfplumber.open("f.pdf") as pdf:
 
   <div class="callout callout-info">
     <strong>Why this matters for how you write skills</strong>
-    The description is the <em>only thing</em> Claude sees for most skills, most of the time. SKILL.md is only read when the skill is matched. Reference files are only read when explicitly needed. Design your skill with this loading order in mind.
+    The description is the <em>only thing</em> the agent sees for most skills, most of the time. SKILL.md is only read when the skill is matched. Reference files are only read when explicitly needed. Design your skill with this loading order in mind.
   </div>
 
   <h2>The resources folder pattern</h2>
-  <p>For larger skills, move detail into linked files. SKILL.md points to them; Claude only loads what's needed.</p>
+  <p>For larger skills, move detail into linked files. SKILL.md points to them; the agent only loads what's needed.</p>
   <pre style="font-size:12px;"><span class="c">pdf-skill/
   SKILL.md          ← always loaded when skill matches
   FORMS.md          ← only loaded if user asks about forms
@@ -940,16 +943,16 @@ with pdfplumber.open("f.pdf") as pdf:
   <p style="font-size:14px;color:var(--text-2);">This structure means a skill can have comprehensive documentation without bloating the context window on every call. A form-filling question loads FORMS.md; a text extraction question doesn't. Scripts are <em>executed</em>, never read — so their size doesn't matter at all.</p>
   <div class="callout callout-warn">
     <strong>Keep references one level deep</strong>
-    SKILL.md → FORMS.md ✓ &nbsp;&nbsp; SKILL.md → advanced.md → details.md ✗<br>Claude may not follow nested links fully. All reference files should link directly from SKILL.md.
+    SKILL.md → FORMS.md ✓ &nbsp;&nbsp; SKILL.md → advanced.md → details.md ✗<br>the agent may not follow nested links fully. All reference files should link directly from SKILL.md.
   </div>
 
   <h2>Order the stages</h2>
   <p style="font-size:14px;color:var(--text-2);">Drag to arrange in the correct loading order.</p>
   <ul class="sort-list" id="sortable">
-    <li class="sort-item" draggable="true" data-order="3"><span class="grip">⠿</span>Claude reads SKILL.md body and follows any linked files it needs</li>
+    <li class="sort-item" draggable="true" data-order="3"><span class="grip">⠿</span>the agent reads SKILL.md body and follows any linked files it needs</li>
     <li class="sort-item" draggable="true" data-order="1"><span class="grip">⠿</span>Agent starts up — name + description of all skills loaded into system prompt</li>
-    <li class="sort-item" draggable="true" data-order="4"><span class="grip">⠿</span>Claude executes the instructions and produces output</li>
-    <li class="sort-item" draggable="true" data-order="2"><span class="grip">⠿</span>User sends a request — Claude matches it to the right skill via description</li>
+    <li class="sort-item" draggable="true" data-order="4"><span class="grip">⠿</span>the agent executes the instructions and produces output</li>
+    <li class="sort-item" draggable="true" data-order="2"><span class="grip">⠿</span>User sends a request — the agent matches it to the right skill via description</li>
   </ul>
   <button class="btn btn-sm" style="margin-top:8px;" onclick="checkOrder()">Check order</button>
   <div id="order-result" style="display:none;margin-top:8px;font-size:13.5px;"></div>
@@ -978,10 +981,10 @@ with pdfplumber.open("f.pdf") as pdf:
 
 <span id="ap2" class="ap-highlight" onclick="foundAP(2)">PDF stands for Portable Document Format. It is a widely used file format
 developed by Adobe. PDFs can contain text, images, tables, and forms.
-To extract text from a PDF in Python, you will need a library.<span class="ap-tooltip">✗ Over-explaining what Claude already knows — wastes tokens on facts the model has.</span></span>
+To extract text from a PDF in Python, you will need a library.<span class="ap-tooltip">✗ Over-explaining what the model already knows — wastes tokens on facts the model has.</span></span>
 
 You can use pypdf, pdfplumber, PyMuPDF, pdf2image, pymupdf4llm, or
-<span id="ap3" class="ap-highlight" onclick="foundAP(3)">pdfminer — each works fine, choose based on your needs.<span class="ap-tooltip">✗ Too many options with no default — Claude needs a recommendation, not a menu.</span></span>
+<span id="ap3" class="ap-highlight" onclick="foundAP(3)">pdfminer — each works fine, choose based on your needs.<span class="ap-tooltip">✗ Too many options with no default — the agent needs a recommendation, not a menu.</span></span>
 
 <span style="color:#569cd6;">## Examples</span>
 
@@ -1004,7 +1007,7 @@ See advanced.md for examples.
 
 <span class="k">## Instructions</span>
 
-<span class="c">← No PDF explainer. Claude already knows what a PDF is.</span>
+<span class="c">← No PDF explainer. the model already knows what a PDF is.</span>
 
 Extract text with pdfplumber:           <span class="c">← one default tool, not a menu</span>
 <span class="s">```python
@@ -1025,7 +1028,7 @@ For scanned PDFs requiring OCR, use pdf2image + pytesseract instead.
   <h2>Quick reference: anti-patterns to avoid</h2>
   <div class="card" style="margin-bottom:10px;border-left:3px solid var(--danger);"><h3 style="color:var(--danger);margin-top:0;font-size:14px;">First-person descriptions</h3><p style="font-size:13.5px;margin:0;">❌ "I can help you…" &nbsp; ✓ "Extracts text from…"</p></div>
   <div class="card" style="margin-bottom:10px;border-left:3px solid var(--danger);"><h3 style="color:var(--danger);margin-top:0;font-size:14px;">Too many options, no default</h3><p style="font-size:13.5px;margin:0;">❌ "You can use pypdf, pdfplumber, PyMuPDF…" &nbsp; ✓ "Use pdfplumber. For scanned PDFs, use pdf2image."</p></div>
-  <div class="card" style="margin-bottom:10px;border-left:3px solid var(--danger);"><h3 style="color:var(--danger);margin-top:0;font-size:14px;">Over-explaining what Claude knows</h3><p style="font-size:13.5px;margin:0;">❌ Defining what a PDF is. &nbsp; ✓ Just give the code.</p></div>
+  <div class="card" style="margin-bottom:10px;border-left:3px solid var(--danger);"><h3 style="color:var(--danger);margin-top:0;font-size:14px;">Over-explaining what the model knows</h3><p style="font-size:13.5px;margin:0;">❌ Defining what a PDF is. &nbsp; ✓ Just give the code.</p></div>
   <div class="card" style="margin-bottom:10px;border-left:3px solid var(--danger);"><h3 style="color:var(--danger);margin-top:0;font-size:14px;">Deeply nested references</h3><p style="font-size:13.5px;margin:0;">❌ SKILL.md → advanced.md → details.md &nbsp; ✓ SKILL.md → ref1.md, ref2.md (one level)</p></div>
   <div class="card" style="margin-bottom:10px;border-left:3px solid var(--danger);"><h3 style="color:var(--danger);margin-top:0;font-size:14px;">Time-sensitive information</h3><p style="font-size:13.5px;margin:0;">❌ "If you're doing this before August 2025…" &nbsp; ✓ "Current method / Old patterns (deprecated)" sections</p></div>
 
@@ -1094,14 +1097,13 @@ If the mood is unclear, ask one clarifying question before recommending.
   </div>
 
   <h2 style="margin-top:2rem;">Reflection</h2>
-  <p style="font-size:14px;color:var(--text-2);">Answer before moving on — submit a screenshot of this in the Google Form.</p>
   <div class="skill-field"><label>What was hardest to write, and what did you learn from the worked example?</label>
-  <textarea id="reflection" placeholder="Which field gave you the most trouble? Did the output format feel natural to specify? What would you do differently?" style="min-height:100px;"></textarea></div>
+  <textarea id="reflection-warmup" placeholder="Which field gave you the most trouble? Did the output format feel natural to specify? What would you do differently?" style="min-height:100px;"></textarea></div>
 
   <div class="nav-buttons"><button class="btn" onclick="goTo(11)">← Back</button><button class="btn btn-primary" id="next-12" onclick="goTo(13)">Final checklist →</button></div>
 </div>
 
-<!-- 10: Checklist -->
+<!-- 13: Checklist -->
 <div class="section" id="s13">
   <div class="section-tag">Wrap-up</div>
   <h1>Checklist & reflection</h1>
@@ -1113,7 +1115,7 @@ If the mood is unclear, ask one clarifying question before recommending.
 
   <h2>Final reflection</h2>
   <p style="font-size:14px;">Looking at the SKILL.md format, which part do you think most affects whether the agent uses your skill at the right time?</p>
-  <textarea placeholder="Consider the description field, the name, the trigger phrases... what did you learn from this prelab?" style="min-height:90px;"></textarea>
+  <textarea id="reflection-final" placeholder="Consider the description field, the name, the trigger phrases... what did you learn from this prelab?" style="min-height:90px;"></textarea>
 
   <h2>Resources</h2>
   <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:0.5rem;">
@@ -1123,6 +1125,14 @@ If the mood is unclear, ask one clarifying question before recommending.
     <a class="ext-link" href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/quickstart" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:var(--accent-text);text-decoration:none;font-size:13.5px;font-weight:500;padding:6px 14px;border:0.5px solid var(--accent-border);border-radius:var(--radius);background:var(--accent-bg);">Quickstart ↗</a>
     <a class="ext-link" href="https://github.com/arya-srinivasan/Leaderboard/tree/main" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:var(--accent-text);text-decoration:none;font-size:13.5px;font-weight:500;padding:6px 14px;border:0.5px solid var(--accent-border);border-radius:var(--radius);background:var(--accent-bg);">Challenge Repo ↗</a>
   </div>
+
+  <div style="margin-top:2rem;padding:1.5rem;background:var(--surface);border:1.5px solid var(--accent-border);border-radius:12px;">
+    <h3 style="margin:0 0 8px;font-size:16px;">Submit Prelab 1</h3>
+    <p style="font-size:14px;color:var(--text-2);margin-bottom:1rem;">When you've completed all sections and written your reflections, submit to mark this prelab complete.</p>
+    <button class="btn btn-primary" id="final-submit-btn" onclick="submitPrelab()" style="padding:10px 28px;font-size:15px;">Submit Prelab 1 ✓</button>
+    <div id="submit-status" style="margin-top:12px;font-size:14px;display:none;"></div>
+  </div>
+
   <div class="nav-buttons"><button class="btn" onclick="goTo(12)">← Back</button></div>
 </div>
 
@@ -1268,9 +1278,9 @@ function checkDescription() {
 // Context window visualiser
 const ctxLabels = [
   "Stage 1 — Startup: The system prompt and conversation history are always in context. The names and descriptions of all your skills are also loaded here — that's it. SKILL.md bodies are not loaded yet.",
-  "Stage 2 — Request arrives: The user sends a message. Claude reads it alongside all the skill names and descriptions already in context and picks the best match.",
-  "Stage 3 — Skill triggered: Claude reads the full SKILL.md body of the matched skill. Now the instructions and examples are in context. Other skills' bodies remain unloaded.",
-  "Stage 4 — Advanced feature needed: The user asks about something covered in a linked file (e.g. FORMS.md). Claude reads just that file. The other reference files (REFERENCE.md, etc.) stay on disk — zero context cost."
+  "Stage 2 — Request arrives: The user sends a message. the agent reads it alongside all the skill names and descriptions already in context and picks the best match.",
+  "Stage 3 — Skill triggered: the agent reads the full SKILL.md body of the matched skill. Now the instructions and examples are in context. Other skills' bodies remain unloaded.",
+  "Stage 4 — Advanced feature needed: The user asks about something covered in a linked file (e.g. FORMS.md). the agent reads just that file. The other reference files (REFERENCE.md, etc.) stay on disk — zero context cost."
 ];
 function ctxStep(stage) {
   const slots = ['ctx-s0','ctx-s1','ctx-s2','ctx-s3'];
@@ -1347,7 +1357,7 @@ const quizzes = {
   q2: { q:"What's the main advantage of a skill over a one-time prompt?", opts:["Skills use better models","Skills are reusable — the agent can discover and use them across many tasks","Skills run faster","Skills don't need examples"], ans:1, exp:"Skills are reusable instruction sets. Once written, the agent can invoke them whenever a matching task comes up — no re-prompting needed." },
   q3: { q:"Which of these is a valid skill name?", opts:["RecipeHelper","claude-recipe-tool","summarizing-recipes","My Recipe Tool 2025"], ans:2, exp:"Skill names must be lowercase, use only hyphens (no spaces), and cannot contain 'claude' or 'anthropic'. 'summarizing-recipes' follows gerund naming convention." },
   q5: { q:"The '## Examples' section in a skill is equivalent to which prompting technique?", opts:["Zero-shot prompting","Few-shot prompting","Chain-of-thought prompting","Role prompting"], ans:1, exp:"The examples section provides input → output pairs that teach the agent the expected format and style — exactly like few-shot prompting." },
-  q6: { q:"A skill must always output a calorie count in the format '~600 kcal'. Which degree of freedom applies?", opts:["High freedom — Claude can phrase it however it likes","Medium freedom — close enough is fine","Low freedom — specify the exact format so it's consistent every time"], ans:2, exp:"Exact output format is a 'narrow bridge' — there's only one right answer. Low freedom is correct: specify the field name and format so every run produces the same structure." }
+  q6: { q:"A skill must always output a calorie count in the format '~600 kcal'. Which degree of freedom applies?", opts:["High freedom — the agent can phrase it however it likes","Medium freedom — close enough is fine","Low freedom — specify the exact format so it's consistent every time"], ans:2, exp:"Exact output format is a 'narrow bridge' — there's only one right answer. Low freedom is correct: specify the field name and format so every run produces the same structure." }
 };
 function buildQuiz(id) {
   const el=document.getElementById(id); if (!el) return;
@@ -1421,7 +1431,7 @@ function checkAllDone() {
 buildChecklist('checklist-core',[
   'Description is written in third person (not "I can help you...")',
   'Description includes both what the skill does AND a "Use when..." trigger',
-  'Skill name is lowercase with hyphens only, no "claude" or "anthropic"',
+  'Skill name is lowercase with hyphens only, no reserved words',
   'No time-sensitive information (no "before/after [date]" language)',
   'Consistent terminology throughout — one word for each concept',
   'SKILL.md body is under 500 lines; detail moved to linked files if needed',
@@ -1431,103 +1441,28 @@ buildChecklist('checklist-lab',[
   'Output format fully specified — structure, field names, length limits',
   'At least one concrete input → output example in the Examples section',
   'Degree of freedom matches the task — low for strict formats, high for open-ended',
-  'No unnecessary explanations of things Claude already knows',
+  'No unnecessary explanations of things the model already knows',
   'References to other files are one level deep from SKILL.md (no nesting)',
 ]);
 
-// ─── SUPABASE AUTH + PROGRESS ───────────────────────────────────────────────
-const SUPABASE_URL = 'https://jfjegonhtmmuublikxpk.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmamVnb25odG1tdXVibGlreHBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMTAxMDEsImV4cCI6MjEwNjY4NjEwMX0.1xEklI15Df1nRSgc9JmIz7dytqS2uWB_hV9ec2PFofM'
-const { createClient } = supabase
-const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-
+// ─── Page config ─────────────────────────────────────────────────────────────
 const PRELAB_ID = 'prelab-1'
-// Save every section completion individually so we can restore exact state
-// Also map to dashboard milestone IDs for progress bars
+const PRELAB_LABEL = 'Prelab 1'
+const MAX_SECTION = 13
 const DASHBOARD_MILESTONES = {
   2:  'section-1-prompting',
   11: 'section-2-agents',
   13: 'activities-complete',
 }
 
-let currentUser = null
-
-async function initAuth() {
-  const { data: { session } } = await db.auth.getSession()
-  if (!session) { window.location.href = '../index.html'; return }
-  currentUser = session.user
-
-  const logo = document.querySelector('.sidebar-logo')
-  const userBar = document.createElement('div')
-  userBar.style.cssText = 'padding:8px 1.25rem 0;display:flex;align-items:center;justify-content:space-between;'
-  userBar.innerHTML = `<span style="font-size:12px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;">${currentUser.email}</span><button onclick="doLogout()" style="font-size:11px;padding:3px 8px;border:0.5px solid var(--border-strong);border-radius:6px;background:none;color:var(--text-3);cursor:pointer;">Out</button>`
-  logo.appendChild(userBar)
-
-  const dashLink = document.createElement('div')
-  dashLink.style.cssText = 'padding:6px 1.25rem 0;'
-  dashLink.innerHTML = `<a href="../dashboard.html" style="font-size:12px;font-weight:500;color:var(--accent-text);text-decoration:none;display:inline-block;padding:5px 10px;background:var(--accent-bg);border:0.5px solid var(--accent-border);border-radius:6px;margin-top:2px;">← Dashboard</a>`
-  logo.appendChild(dashLink)
-
-  await restoreProgress()
-}
-
-async function restoreProgress() {
-  const { data } = await db.from('progress')
-    .select('section_id')
-    .eq('user_id', currentUser.id)
-    .eq('prelab_id', PRELAB_ID)
-
-  if (!data || data.length === 0) return
-
-  const completed = new Set(data.map(r => r.section_id))
-
-  // Restore every completed section so student resumes where they left off
-  // Section IDs are stored as 'section-N' e.g. 'section-0', 'section-5'
-  completed.forEach(sid => {
-    if (!sid.startsWith('section-')) return
-    const n = parseInt(sid.replace('section-', ''))
-    if (!isNaN(n)) {
-      // Replay markDone for each completed section to unlock Next buttons
-      sectionDone.add(n)
-      const navDot = document.querySelector('.nav-item[data-section="'+n+'"]')
-      if (navDot) { navDot.classList.add('done'); navDot.style.color = 'var(--success)'; }
-      const nextBtn = document.getElementById('next-'+n)
-      if (nextBtn) nextBtn.removeAttribute('disabled')
-    }
-  })
-
-  // Recalculate unlockedUpTo
-  while (sectionDone.has(unlockedUpTo)) unlockedUpTo++
-
-  // Navigate to the furthest unlocked section automatically
-  if (unlockedUpTo > 0) goTo(Math.min(unlockedUpTo, 13))
-}
-
-async function saveProgress(sectionN) {
-  if (!currentUser) return
-  const rows = [{ user_id: currentUser.id, prelab_id: PRELAB_ID, section_id: 'section-' + sectionN }]
-  if (DASHBOARD_MILESTONES[sectionN]) {
-    rows.push({ user_id: currentUser.id, prelab_id: PRELAB_ID, section_id: DASHBOARD_MILESTONES[sectionN] })
-  }
-  for (const row of rows) {
-    const { error } = await db.from('progress').insert(row)
-    if (error && error.code !== '23505') {
-      // 23505 = duplicate key, safe to ignore. Log anything else.
-      console.error('Progress save error:', error)
-    }
-  }
-}
-
-
-
-async function doLogout() {
-  await db.auth.signOut()
-  window.location.href = '../index.html'
-}
-
+// Boot
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/client.js"></script>
+<script src="../js/prelab.js"></script>
+<script>
+injectTopNav()
 initAuth()
-// ─────────────────────────────────────────────────────────────────────────────
-
 </script>
 </body>
 </html>

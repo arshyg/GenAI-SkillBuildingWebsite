@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Prelab 3 — GenAI SkillBuilding</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+
 <style>
   :root {
     --bg: #f8f7f4;
@@ -1591,60 +1593,24 @@ function copySubmission() {
   }
 }
 
+// ─── Page config ─────────────────────────────────────────────────────────────
 const PRELAB_ID = 'prelab-3'
-const SUPABASE_URL = 'https://jfjegonhtmmuublikxpk.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmamVnb25odG1tdXVibGlreHBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMTAxMDEsImV4cCI6MjEwNjY4NjEwMX0.1xEklI15Df1nRSgc9JmIz7dytqS2uWB_hV9ec2PFofM'
-const { createClient } = supabase
-const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-let currentUser = null
-
-async function initAuth() {
-  const { data: { session } } = await db.auth.getSession()
-  if (!session) { window.location.href = '../index.html'; return }
-  currentUser = session.user
-  const logo = document.querySelector('.sidebar-logo')
-  const userBar = document.createElement('div')
-  userBar.style.cssText = 'padding:8px 1.25rem 0;display:flex;align-items:center;justify-content:space-between;'
-  userBar.innerHTML = `<span style="font-size:12px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;">${currentUser.email}</span><button onclick="doLogout()" style="font-size:11px;padding:3px 8px;border:0.5px solid var(--border-strong);border-radius:6px;background:none;color:var(--text-3);cursor:pointer;">Out</button>`
-  logo.appendChild(userBar)
-  const dashLink = document.createElement('div')
-  dashLink.style.cssText = 'padding:6px 1.25rem 0;'
-  dashLink.innerHTML = `<a href="../dashboard.html" style="font-size:12px;font-weight:500;color:var(--accent-text);text-decoration:none;display:inline-block;padding:5px 10px;background:var(--accent-bg);border:0.5px solid var(--accent-border);border-radius:6px;margin-top:2px;">← Dashboard</a>`
-  logo.appendChild(dashLink)
-  await restoreProgress()
+const PRELAB_LABEL = 'Prelab 3'
+const MAX_SECTION = 9
+const DASHBOARD_MILESTONES = {
+  2: 'section-1-foundations',
+  5: 'section-2-deepdive',
+  7: 'section-3-bestpractices',
+  9: 'activities-complete',
 }
 
-async function restoreProgress() {
-  const { data } = await db.from('progress').select('section_id').eq('user_id', currentUser.id).eq('prelab_id', PRELAB_ID)
-  if (!data || data.length === 0) return
-  const completed = new Set(data.map(r => r.section_id))
-  completed.forEach(sid => {
-    if (!/^section-\d+$/.test(sid)) return
-    const n = parseInt(sid.replace('section-', ''))
-    if (isNaN(n)) return
-    sectionDone.add(n)
-    const navDot = document.querySelector('.nav-item[data-section="'+n+'"]')
-    if (navDot) navDot.classList.add('done')
-    const nextBtn = document.getElementById('next-'+n)
-    if (nextBtn) nextBtn.removeAttribute('disabled')
-  })
-  while (sectionDone.has(unlockedUpTo)) unlockedUpTo++
-  if (unlockedUpTo > 0) goTo(Math.min(unlockedUpTo, 9))
-}
-
-async function saveProgress(sectionN) {
-  if (!currentUser) return
-  const { error } = await db.from('progress').insert({
-    user_id: currentUser.id, prelab_id: PRELAB_ID, section_id: 'section-' + sectionN
-  })
-  if (error && error.code !== '23505') console.error('Progress save error:', error)
-}
-
-async function doLogout() {
-  await db.auth.signOut()
-  window.location.href = '../index.html'
-}
-
+// Boot
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/client.js"></script>
+<script src="../js/prelab.js"></script>
+<script>
+injectTopNav()
 initAuth()
 </script>
 </body>
