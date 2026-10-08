@@ -1043,8 +1043,6 @@
   <h1>Checklist & reflection</h1>
   <p class="subtitle">A reference checklist for any eval process you build — pull this up before you trust a score.</p>
 
-  <div id="instructor-panel" style="display:none;" class="card"></div>
-
   <div class="card">
     <h3 style="margin-top:0; margin-bottom:1rem;">Core eval quality</h3>
     <div id="checklist-core"></div>
@@ -1059,8 +1057,7 @@
 
   <h2>Final reflection</h2>
   <p style="font-size:14px;">Which single addition to your eval process would most improve your confidence in your skill right now — a new test case, a deterministic check, better judge calibration, or a trace review? Why?</p>
-  <textarea id="s9-reflect" placeholder="There's no single right answer — this is about noticing where your own biggest blind spot currently is." style="min-height:90px;" oninput="onFinalReflectInput()"></textarea>
-  <div class="section-hint" id="submit-status"></div>
+  <textarea id="s9-reflect" placeholder="There's no single right answer — this is about noticing where your own biggest blind spot currently is." style="min-height:90px;"></textarea>
 
   <h2>Resources</h2>
   <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:0.5rem;">
@@ -1071,17 +1068,11 @@
     <a class="ext-link" href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview" target="_blank">Agent Skills Overview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg></a>
   </div>
 
-  <h2>Submit your completion</h2>
-  <div class="card">
-    <p style="font-size:13.5px; margin-bottom:1rem;">This generates a submission file from what you actually did in this page — your section completion, quiz results, and both reflections in full — plus an integrity hash so a submission that's edited after generating won't quietly pass as untouched. Submit the downloaded file (or the pasted text) wherever your instructor collects prelab submissions.</p>
-    <div class="skill-field">
-      <label>Your name (goes on the submission)</label>
-      <input type="text" id="submit-name" placeholder="Jane Doe">
-    </div>
-    <button class="btn btn-primary btn-sm" onclick="generateSubmission()">Generate my submission</button>
-    <div id="submit-generate-status" style="margin-top:10px; font-size:13px;"></div>
-    <textarea id="submit-preview" style="display:none; margin-top:12px; min-height:220px; font-family:var(--mono); font-size:11.5px;" readonly></textarea>
-    <button class="btn btn-sm" id="submit-copy-btn" style="display:none; margin-top:8px;" onclick="copySubmission()">Copy to clipboard</button>
+  <div style="margin-top:2rem;padding:1.5rem;background:var(--surface);border:1.5px solid var(--accent-border);border-radius:12px;">
+    <h3 style="margin:0 0 8px;font-size:16px;">Submit Prelab 3</h3>
+    <p style="font-size:14px;color:var(--text-2);margin-bottom:1rem;">When you've completed all sections and written your reflections, submit to mark this prelab complete.</p>
+    <button class="btn btn-primary" id="final-submit-btn" onclick="submitPrelab()" style="padding:10px 28px;font-size:15px;">Submit Prelab 3 ✓</button>
+    <div id="submit-status" style="margin-top:12px;font-size:14px;display:none;"></div>
   </div>
 
   <div class="nav-buttons">
@@ -1227,7 +1218,6 @@ function markDone(n) {
   // advance the unlock frontier past any contiguous run of completed sections
   while (sectionDone.has(unlockedUpTo)) unlockedUpTo++;
   updateProgress();
-  syncProgress();
   if (typeof saveProgress === 'function') saveProgress(n);
 }
 
@@ -1382,13 +1372,7 @@ function checkAllDone() {
   const all = document.querySelectorAll('#s9 input[type=checkbox]');
   const done = [...all].every(c => c.checked);
   document.getElementById('checklist-done').style.display = done ? 'block' : 'none';
-  if (done) { sectionDone.add(9); syncProgress(true); }
-}
-
-function onFinalReflectInput() {
-  // lightweight debounce, synced along with any other change
-  clearTimeout(window._reflectTimer);
-  window._reflectTimer = setTimeout(() => syncProgress(), 800);
+  if (done) markDone(9);
 }
 
 buildChecklist('checklist-core', [
@@ -1405,193 +1389,6 @@ buildChecklist('checklist-lab', [
 ]);
 
 updateProgress();
-
-// ================= real per-student completion tracking =================
-// Uses this environment's `db` + `user` capabilities so a student's progress
-// is a server-side record an instructor can actually see — not just a
-// client-side flag anyone could fake by editing the page. Degrades silently
-// to "local only" (no submission) if these capabilities aren't available
-// (e.g. opened outside the organization, or on a host that doesn't serve them).
-let dbNS = null, userNS = null, myId = null, iAmOwner = false;
-let writeInFlight = false, writeQueued = false;
-
-async function initCloudProgress() {
-  try {
-    dbNS = (window.claude && window.claude.use) ? await window.claude.use('db') : null;
-    userNS = (window.claude && window.claude.use) ? await window.claude.use('user') : null;
-    if (userNS) {
-      myId = await userNS.id();
-      iAmOwner = await userNS.isOwner();
-    }
-  } catch (e) {
-    dbNS = null; userNS = null;
-  }
-  const status = document.getElementById('submit-status');
-  if (status) {
-    if (!dbNS || !myId) status.textContent = 'Progress tracking unavailable in this view — your local progress still works, but nothing is being recorded for your instructor.';
-    else status.textContent = 'Your progress is being recorded as you go.';
-  }
-  if (iAmOwner) renderInstructorDashboard();
-}
-
-async function syncProgress(isFinal) {
-  if (!dbNS || !myId) return;
-  if (writeInFlight) { writeQueued = true; return; }
-  writeInFlight = true;
-  try {
-    const s8 = document.getElementById('s8-reflect');
-    const s9 = document.getElementById('s9-reflect');
-    await dbNS.doc('completions/' + myId).set({
-      sectionsDone: [...sectionDone],
-      quizCorrect: quizCorrect,
-      s8Reflection: s8 ? s8.value.slice(0, 800) : '',
-      s9Reflection: s9 ? s9.value.slice(0, 800) : '',
-      final: !!isFinal,
-      updatedAt: new Date().toISOString()
-    });
-  } catch (e) {
-    // transient — the next real change will retry
-  }
-  writeInFlight = false;
-  if (writeQueued) { writeQueued = false; syncProgress(isFinal); }
-}
-
-async function renderInstructorDashboard() {
-  const panel = document.getElementById('instructor-panel');
-  if (!panel) return;
-  panel.style.display = 'block';
-  panel.innerHTML = '<h3 style="margin-top:0;">Class completion (visible to you as the owner)</h3>';
-  if (!dbNS) {
-    const p = document.createElement('p');
-    p.textContent = 'Database not available in this view.';
-    panel.appendChild(p);
-    return;
-  }
-  let snap;
-  try {
-    snap = await dbNS.collection('completions').get();
-  } catch (e) {
-    const p = document.createElement('p');
-    p.textContent = 'Could not load completion data right now.';
-    panel.appendChild(p);
-    return;
-  }
-  const ids = snap.docs.map(d => d.id);
-  let profiles = {};
-  try { profiles = (userNS && ids.length) ? await userNS.profiles(ids) : {}; } catch (e) {}
-  const table = document.createElement('table');
-  table.className = 'pareto-table';
-  const header = document.createElement('tr');
-  ['Student', 'Progress', 'Last update'].forEach(h => { const th = document.createElement('th'); th.textContent = h; header.appendChild(th); });
-  table.appendChild(header);
-  if (snap.docs.length === 0) {
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
-    td.colSpan = 3; td.textContent = 'No submissions yet.';
-    tr.appendChild(td); table.appendChild(tr);
-  }
-  snap.docs.forEach(d => {
-    const data = d.data() || {};
-    const prof = profiles[d.id];
-    const name = (prof && prof.name) || d.id;
-    const pct = Math.round(((data.sectionsDone || []).length / 10) * 100);
-    const tr = document.createElement('tr');
-    const tdName = document.createElement('td'); tdName.textContent = name; tr.appendChild(tdName);
-    const tdPct = document.createElement('td'); tdPct.textContent = pct + '%'; tr.appendChild(tdPct);
-    const tdTime = document.createElement('td'); tdTime.textContent = (data.updatedAt || '').replace('T', ' ').slice(0, 16); tr.appendChild(tdTime);
-    table.appendChild(tr);
-  });
-  panel.appendChild(table);
-}
-
-initCloudProgress();
-
-// ================= submission generation (works with no capabilities at all) =================
-async function sha256Hex(text) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
-}
-
-async function generateSubmission() {
-  const status = document.getElementById('submit-generate-status');
-  const allChecked = document.getElementById('checklist-done').style.display === 'block';
-  if (!allChecked) {
-    status.style.color = 'var(--danger)';
-    status.textContent = 'Finish checking every item in both checklists above first — the submission reflects what you actually completed.';
-    return;
-  }
-  const name = document.getElementById('submit-name').value.trim() || '(name not entered)';
-  const quizLines = Object.keys(quizzes).map(id => `  ${id}: ${quizCorrect[id] === true ? 'correct' : (quizCorrect[id] === false ? 'incorrect (on last attempt)' : 'not attempted')}`).join('\n');
-  const s8 = (document.getElementById('s8-reflect') || {}).value || '(empty)';
-  const s9 = (document.getElementById('s9-reflect') || {}).value || '(empty)';
-  const sectionsList = [...sectionDone].sort((a,b)=>a-b).join(', ');
-  const graderLabel = { code: 'code-based', model: 'model-based', human: 'human review', '': '(not chosen)' };
-  const graderLines = [1,2,3,4].map(i => {
-    const el = document.getElementById('tc'+i+'-grader');
-    return `  test case ${i}: ${el ? graderLabel[el.value] : '(n/a)'}`;
-  }).join('\n');
-
-  let body =
-`WEEK 3 PRELAB SUBMISSION
-Evaluating & Optimizing Agent Skills
-
-Name: ${name}
-Generated: ${new Date().toISOString()}
-Sections completed: ${sectionsList} (${sectionDone.size}/${SECTIONS})
-
-Quiz results:
-${quizLines}
-
-Grading methods chosen (Section 8):
-${graderLines}
-
-Reflection — Activity: hardest test case (Section 8):
-${s8}
-
-Reflection — Final reflection (Section 9):
-${s9}
-`;
-
-  const hash = await sha256Hex(body);
-  const fullText = body + `\nIntegrity hash (SHA-256 of everything above this line): ${hash}\n`;
-
-  const preview = document.getElementById('submit-preview');
-  preview.value = fullText;
-  preview.style.display = 'block';
-  document.getElementById('submit-copy-btn').style.display = 'inline-flex';
-
-  let downloadsNS = null;
-  try { downloadsNS = (window.claude && window.claude.use) ? await window.claude.use('downloads') : null; } catch (e) {}
-
-  if (downloadsNS) {
-    try {
-      const filename = 'prelab3-submission-' + name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') + '.txt';
-      await downloadsNS.save({ filename, data: fullText });
-      status.style.color = 'var(--success)';
-      status.textContent = '✓ Downloaded — upload that file wherever your instructor collects prelab submissions.';
-    } catch (e) {
-      status.style.color = 'var(--text-2)';
-      status.textContent = 'Could not trigger a download here — the text is shown below. Copy it and paste it into your submission form instead.';
-    }
-  } else {
-    status.style.color = 'var(--text-2)';
-    status.textContent = 'Downloads aren\'t available in this view — the text is shown below. Copy it and paste it into your submission form instead.';
-  }
-}
-
-function copySubmission() {
-  const preview = document.getElementById('submit-preview');
-  preview.select();
-  try {
-    navigator.clipboard.writeText(preview.value);
-    const btn = document.getElementById('submit-copy-btn');
-    const old = btn.textContent;
-    btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = old, 1500);
-  } catch (e) {
-    document.execCommand('copy');
-  }
-}
 
 // ─── Page config ─────────────────────────────────────────────────────────────
 const PRELAB_ID = 'prelab-3'
