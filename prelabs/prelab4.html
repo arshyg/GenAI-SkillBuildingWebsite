@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prelab 4 — MCP, RAG & Memory</title>
+<style>
+  :root {
+    --bg:#f8f7f4;--surface:#fff;--surface-2:#f1efe8;
+    --border:rgba(0,0,0,0.1);--border-strong:rgba(0,0,0,0.18);
+    --text:#1a1a18;--text-2:#555550;--text-3:#888780;
+    --accent:#1a6fb5;--accent-bg:#e8f1fb;--accent-border:#a8c8f0;--accent-text:#0d4a7a;
+    --green:#0f6e56;--green-bg:#e1f5ee;--green-border:#9fe1cb;--green-text:#085041;
+    --purple:#5034c4;--purple-bg:#eeedfe;--purple-border:#afa9ec;--purple-text:#3c3489;
+    --amber:#b45309;--amber-bg:#fef3c7;--amber-border:#fcd34d;--amber-text:#92400e;
+    --coral:#d85a30;--coral-bg:#faece7;--coral-border:#f5c4b3;--coral-text:#993c1d;
+    --success:#0f6e56;--success-bg:#e1f5ee;--success-border:#9fe1cb;
+    --danger:#993c1d;--danger-bg:#faece7;--danger-border:#f5c4b3;
+    --radius:8px;--mono:'Fira Code','Courier New',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.7;}
+  .app{display:flex;min-height:100vh;}
+  .sidebar{width:224px;flex-shrink:0;background:var(--surface);border-right:.5px solid var(--border-strong);position:sticky;top:0;height:100vh;overflow-y:auto;padding:1.5rem 0;}
+  .sidebar-logo{padding:0 1.25rem 1.25rem;border-bottom:.5px solid var(--border);margin-bottom:.75rem;}
+  .sidebar-logo .label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);}
+  .sidebar-logo h2{font-size:14px;font-weight:500;color:var(--text);margin-top:2px;}
+  .nav-item{display:flex;align-items:center;gap:8px;padding:7px 1.25rem;font-size:13px;color:var(--text-2);cursor:pointer;border-left:2px solid transparent;transition:all .15s;user-select:none;}
+  .nav-item:hover{color:var(--text);background:var(--surface-2);}
+  .nav-item.active{color:var(--accent-text);border-left-color:var(--accent);background:var(--accent-bg);font-weight:500;}
+  .nav-item .dot{width:6px;height:6px;border-radius:50%;background:var(--border-strong);flex-shrink:0;}
+  .nav-item.active .dot{background:var(--accent);}
+  .nav-item.done .dot{background:var(--success);}
+  .nav-section-label{padding:.75rem 1.25rem .25rem;font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);}
+  .main{flex:1;padding:2.5rem 3rem;max-width:780px;}
+  .section{display:none;animation:fadein .2s ease;}
+  .section.active{display:block;}
+  @keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .section-tag{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;display:inline-block;padding:3px 10px;border-radius:99px;margin-bottom:1rem;border:.5px solid;}
+  .tag-blue{color:var(--accent-text);background:var(--accent-bg);border-color:var(--accent-border);}
+  .tag-green{color:var(--green-text);background:var(--green-bg);border-color:var(--green-border);}
+  .tag-purple{color:var(--purple-text);background:var(--purple-bg);border-color:var(--purple-border);}
+  .tag-amber{color:var(--amber-text);background:var(--amber-bg);border-color:var(--amber-border);}
+  h1{font-size:26px;font-weight:500;margin-bottom:.5rem;line-height:1.3;}
+  h2{font-size:18px;font-weight:500;margin:2rem 0 .75rem;}
+  h3{font-size:15px;font-weight:500;margin:1.5rem 0 .5rem;}
+  p{margin-bottom:1rem;color:var(--text-2);}
+  p strong{color:var(--text);font-weight:500;}
+  .subtitle{font-size:16px;color:var(--text-2);margin-bottom:2rem;}
+  ul,ol{padding-left:1.5rem;margin-bottom:1rem;color:var(--text-2);}
+  li{margin-bottom:.35rem;}li strong{color:var(--text);}
+  .card{background:var(--surface);border:.5px solid var(--border-strong);border-radius:12px;padding:1.25rem 1.5rem;margin:1.25rem 0;}
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:1.25rem 0;}
+  .card-sm{background:var(--surface);border:.5px solid var(--border-strong);border-radius:12px;padding:1rem 1.25rem;}
+  .card-sm h4{font-size:14px;font-weight:500;margin-bottom:.25rem;}
+  .card-sm p{font-size:13px;color:var(--text-2);margin:0;}
+  .callout{border-radius:8px;padding:.875rem 1rem;margin:1rem 0;font-size:14px;border-left:3px solid;}
+  .callout-info{background:var(--accent-bg);border-color:var(--accent);color:var(--accent-text);}
+  .callout-tip{background:var(--purple-bg);border-color:var(--purple);color:var(--purple-text);}
+  .callout-warn{background:var(--amber-bg);border-color:var(--amber);color:var(--amber-text);}
+  .callout-danger{background:var(--coral-bg);border-color:var(--coral);color:var(--coral-text);}
+  .callout-colab{background:#fff8e6;border-color:#f0b429;color:#7a4f00;border-left:3px solid #f0b429;}
+  .callout strong{font-weight:500;display:block;margin-bottom:2px;}
+  code{font-family:var(--mono);font-size:12.5px;background:var(--surface-2);padding:1px 5px;border-radius:4px;color:var(--text);}
+  pre{background:#1e1e1e;color:#d4d4d4;border-radius:8px;padding:1rem 1.25rem;font-family:var(--mono);font-size:12px;line-height:1.65;overflow-x:auto;margin:1rem 0;}
+  pre .c{color:#6a9955;}pre .k{color:#569cd6;}pre .s{color:#ce9178;}pre .n{color:#9cdcfe;}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:.5px solid var(--border-strong);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13.5px;font-weight:500;cursor:pointer;transition:.15s;}
+  .btn:hover{background:var(--surface-2);}
+  .btn-primary{background:var(--accent);color:white;border-color:var(--accent);}
+  .btn-primary:hover{background:var(--accent-text);}
+  .btn-sm{padding:5px 12px;font-size:12.5px;}
+  .btn[disabled]{opacity:.4;cursor:not-allowed;}
+  .btn[disabled]:hover{background:var(--surface);transform:none;}
+  hr{border:none;border-top:.5px solid var(--border);margin:2rem 0;}
+  textarea{width:100%;border:.5px solid var(--border-strong);border-radius:8px;padding:.75rem 1rem;font-size:14px;font-family:inherit;color:var(--text);background:var(--surface);resize:vertical;min-height:90px;transition:.15s;outline:none;}
+  textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-bg);}
+  textarea::placeholder{color:var(--text-3);}
+  .nav-buttons{display:flex;gap:10px;margin-top:2.5rem;padding-top:1.5rem;border-top:.5px solid var(--border);}
+  .section-hint{font-size:13px;color:var(--text-3);font-style:italic;margin-bottom:.75rem;}
+
+  /* Read check */
+  .read-check{display:flex;align-items:center;gap:10px;padding:.75rem 1rem;background:var(--surface-2);border-radius:8px;margin-top:1rem;cursor:pointer;font-size:14px;color:var(--text-2);border:.5px solid var(--border);user-select:none;transition:.15s;}
+  .read-check:hover{background:var(--surface);}
+  .read-check.checked{background:var(--success-bg);color:var(--success);border-color:var(--success-border);}
+  .read-check .box{width:18px;height:18px;border:1.5px solid var(--border-strong);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;}
+  .read-check.checked .box{background:var(--success);border-color:var(--success);color:white;}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+  .shake{animation:shake .35s ease;}
+
+  /* Flip cards */
+  .flip-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:1.25rem 0;}
+  .flip-card{height:165px;perspective:900px;cursor:pointer;}
+  .flip-inner{position:relative;width:100%;height:100%;transition:transform .45s cubic-bezier(.4,2,.6,1);transform-style:preserve-3d;}
+  .flip-card.flipped .flip-inner{transform:rotateY(180deg);}
+  .flip-front,.flip-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:12px;padding:1rem;display:flex;flex-direction:column;justify-content:center;}
+  .flip-front{background:var(--surface);border:.5px solid var(--border-strong);}
+  .flip-back{transform:rotateY(180deg);}
+  .flip-back-blue{background:var(--accent-bg);border:.5px solid var(--accent-border);}
+  .flip-back-green{background:var(--green-bg);border:.5px solid var(--green-border);}
+  .flip-back-purple{background:var(--purple-bg);border:.5px solid var(--purple-border);}
+  .flip-back-amber{background:var(--amber-bg);border:.5px solid var(--amber-border);}
+  .flip-front h4{font-size:14px;font-weight:500;margin-bottom:6px;}
+  .flip-front .hint{font-size:11px;color:var(--text-3);margin-top:auto;}
+  .flip-back p{font-size:12.5px;line-height:1.55;margin:0;}
+  .flip-back-blue p{color:var(--accent-text);}
+  .flip-back-green p{color:var(--green-text);}
+  .flip-back-purple p{color:var(--purple-text);}
+  .flip-back-amber p{color:var(--amber-text);}
+  .flip-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+  .flip-label-blue{color:var(--accent);}
+  .flip-label-green{color:var(--green);}
+  .flip-label-purple{color:var(--purple);}
+  .flip-label-amber{color:var(--amber);}
+
+  /* Quiz */
+  .quiz-option{display:flex;align-items:flex-start;gap:10px;padding:.75rem 1rem;border:.5px solid var(--border-strong);border-radius:8px;margin-bottom:8px;cursor:pointer;transition:.15s;font-size:14px;color:var(--text-2);background:var(--surface);}
+  .quiz-option:hover{border-color:var(--accent-border);background:var(--accent-bg);}
+  .quiz-option.correct{border-color:var(--success);background:var(--success-bg);color:var(--success);}
+  .quiz-option.wrong{border-color:var(--danger);background:var(--danger-bg);color:var(--danger);}
+  .quiz-option .letter{width:20px;height:20px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;color:var(--text-3);margin-top:1px;}
+  .quiz-option.correct .letter{background:var(--success);color:white;}
+  .quiz-option.wrong .letter{background:var(--danger);color:white;}
+  .quiz-feedback{display:none;padding:.75rem 1rem;border-radius:8px;font-size:13.5px;margin-top:.75rem;}
+  .quiz-feedback.show{display:block;}
+  .quiz-feedback.correct{background:var(--success-bg);color:var(--success);border:.5px solid var(--success-border);}
+  .quiz-feedback.wrong{background:var(--danger-bg);color:var(--danger);border:.5px solid var(--danger-border);}
+
+  /* Pipeline steps */
+  .pipeline{display:flex;flex-direction:column;gap:0;margin:1.25rem 0;}
+  .pipe-step{display:flex;align-items:stretch;gap:0;}
+  .pipe-left{display:flex;flex-direction:column;align-items:center;width:36px;flex-shrink:0;}
+  .pipe-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:white;flex-shrink:0;}
+  .pipe-line{width:2px;flex:1;min-height:16px;}
+  .pipe-body{flex:1;padding:.75rem 1rem .75rem 0;margin-bottom:4px;}
+  .pipe-body h4{font-size:14px;font-weight:500;margin-bottom:4px;}
+  .pipe-body p{font-size:13px;color:var(--text-2);margin:0;}
+
+  /* Pattern accordion */
+  .pattern-card{background:var(--surface);border:.5px solid var(--border-strong);border-radius:12px;overflow:hidden;margin-bottom:10px;cursor:pointer;transition:.15s;}
+  .pattern-card:hover{border-color:var(--accent-border);}
+  .pattern-card.open{border-color:var(--accent);}
+  .pattern-header{display:flex;align-items:center;gap:12px;padding:1rem 1.25rem;}
+  .pattern-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+  .pattern-header h4{font-size:15px;font-weight:500;margin:0;}
+  .pattern-header p{font-size:13px;color:var(--text-2);margin:0;}
+  .pattern-chevron{margin-left:auto;color:var(--text-3);font-size:12px;transition:.2s;}
+  .pattern-card.open .pattern-chevron{transform:rotate(180deg);}
+  .pattern-body{display:none;border-top:.5px solid var(--border);padding:1.25rem;}
+  .pattern-card.open .pattern-body{display:block;}
+
+  /* Drag sort */
+  .sort-list{list-style:none;padding:0;}
+  .sort-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:.5px solid var(--border-strong);border-radius:8px;margin-bottom:8px;cursor:grab;font-size:14px;color:var(--text-2);transition:.15s;user-select:none;}
+  .sort-item .grip{color:var(--text-3);font-size:16px;}
+  .sort-item.over{border-color:var(--accent);background:var(--accent-bg);}
+
+  /* Classify */
+  .classify-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+  .classify-task{flex:1.8;font-size:13.5px;color:var(--text-2);padding:8px 12px;background:var(--surface-2);border-radius:8px;}
+  .classify-select{flex:1;padding:8px 12px;border:.5px solid var(--border-strong);border-radius:8px;font-size:13px;font-family:inherit;color:var(--text);background:var(--surface);outline:none;}
+  .classify-select.correct{border-color:var(--success);background:var(--success-bg);color:var(--success);}
+  .classify-select.wrong{border-color:var(--danger);background:var(--danger-bg);color:var(--danger);}
+
+  /* MCP diagram */
+  .mcp-diagram{display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:center;margin:1.25rem 0;}
+  .mcp-box{background:var(--surface);border:.5px solid var(--border-strong);border-radius:10px;padding:.875rem 1rem;text-align:center;}
+  .mcp-box h4{font-size:13px;font-weight:600;margin-bottom:4px;}
+  .mcp-box p{font-size:12px;color:var(--text-2);margin:0;}
+  .mcp-arrow{text-align:center;color:var(--text-3);font-size:20px;padding:0 8px;}
+  .mcp-components{display:flex;gap:8px;flex-wrap:wrap;margin:.75rem 0;}
+  .mcp-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;font-size:13px;font-weight:500;border:.5px solid;}
+
+  /* Colab callout */
+  .colab-callout{background:#fff8e6;border:.5px solid var(--amber-border);border-radius:10px;padding:1rem 1.25rem;margin:1rem 0;display:flex;align-items:center;gap:14px;}
+  .colab-callout .icon{font-size:22px;flex-shrink:0;}
+  .colab-callout .label{font-weight:500;font-size:14px;color:#7a4f00;}
+  .colab-callout .sub{font-size:13px;color:#7a4f00;margin-top:2px;opacity:.85;}
+
+  /* Skill field */
+  .skill-field{margin-bottom:1rem;}
+  .skill-field label{display:block;font-size:12.5px;font-weight:500;color:var(--text-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;}
+  .skill-field input{width:100%;padding:8px 12px;border:.5px solid var(--border-strong);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:var(--surface);outline:none;transition:.15s;}
+  .skill-field input:focus{border-color:var(--accent);}
+  .skill-preview{background:#1e1e1e;color:#d4d4d4;border-radius:8px;padding:1rem 1.25rem;font-family:var(--mono);font-size:11.5px;line-height:1.65;min-height:160px;white-space:pre-wrap;word-break:break-word;}
+  .skill-preview .y{color:#9cdcfe;}.skill-preview .v{color:#ce9178;}.skill-preview .c{color:#6a9955;}
+
+  /* Tag pills */
+  .pill{display:inline-block;font-size:11px;padding:2px 9px;border-radius:99px;font-weight:500;margin:2px;}
+  .pill-blue{background:var(--accent-bg);color:var(--accent-text);border:.5px solid var(--accent-border);}
+  .pill-green{background:var(--green-bg);color:var(--green-text);border:.5px solid var(--green-border);}
+  .pill-purple{background:var(--purple-bg);color:var(--purple-text);border:.5px solid var(--purple-border);}
+  .pill-amber{background:var(--amber-bg);color:var(--amber-text);border:.5px solid var(--amber-border);}
+  .pill-coral{background:var(--coral-bg);color:var(--coral-text);border:.5px solid var(--coral-border);}
+
+  /* Checklist */
+  .checklist-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:.5px solid var(--border);font-size:14px;color:var(--text-2);}
+  .checklist-item:last-child{border:none;}
+  .checklist-item input[type=checkbox]{margin-top:3px;accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;}
+
+  @media(max-width:700px){.sidebar{display:none;}.main{padding:1.5rem 1.25rem;}.mcp-diagram{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="app">
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="label">Week 4 · Prelab</div>
+    <h2>MCP, RAG & Memory</h2>
+  </div>
+  <div class="nav-section-label">Overview</div>
+  <div class="nav-item active" data-section="0"><span class="dot"></span>The big picture</div>
+  <div class="nav-section-label">MCP</div>
+  <div class="nav-item" data-section="1"><span class="dot"></span>MCP concepts</div>
+  <div class="nav-item" data-section="2"><span class="dot"></span>MCP in skills</div>
+  <div class="nav-item" data-section="3"><span class="dot"></span>Activity: MCP server</div>
+  <div class="nav-section-label">RAG</div>
+  <div class="nav-item" data-section="4"><span class="dot"></span>RAG concepts</div>
+  <div class="nav-item" data-section="5"><span class="dot"></span>The RAG pipeline</div>
+  <div class="nav-item" data-section="6"><span class="dot"></span>RAG evaluations</div>
+  <div class="nav-section-label">Memory</div>
+  <div class="nav-item" data-section="7"><span class="dot"></span>Memory concepts</div>
+  <div class="nav-item" data-section="8"><span class="dot"></span>Memory patterns</div>
+  <div class="nav-item" data-section="9"><span class="dot"></span>Watch out for</div>
+  <div class="nav-section-label">Activities</div>
+  <div class="nav-item" data-section="10"><span class="dot"></span>Activity: RAG design</div>
+  <div class="nav-item" data-section="11"><span class="dot"></span>Reflection</div>
+</nav>
+
+<main class="main">
+
+<!-- 0: Overview -->
+<div class="section active" id="s0">
+  <div class="section-tag tag-blue">Overview</div>
+  <h1>MCP, RAG & Memory</h1>
+  <p class="subtitle">Three techniques that extend what an agent knows and what it can reach — without changing the model itself.</p>
+
+  <p>By now you can build agents, delegate to subagents, loop for quality, and chain skills. But agents are still limited to what's in their context window and what tools you've hand-coded. These three techniques break those limits.</p>
+
+  <div class="card-grid" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="card-sm" style="border-top:3px solid var(--accent);">
+      <span class="pill pill-blue">MCP</span>
+      <h4 style="margin-top:8px;">Extends reach</h4>
+      <p>A standard protocol for connecting agents to any external tool, data source, or service — without custom integration code for each one.</p>
+    </div>
+    <div class="card-sm" style="border-top:3px solid var(--green);">
+      <span class="pill pill-green">RAG</span>
+      <h4 style="margin-top:8px;">Grounds knowledge</h4>
+      <p>Retrieves relevant chunks from a document store at inference time and injects them into the prompt — so the model answers from evidence, not memory.</p>
+    </div>
+    <div class="card-sm" style="border-top:3px solid var(--purple);">
+      <span class="pill pill-purple">Memory</span>
+      <h4 style="margin-top:8px;">Personalizes over time</h4>
+      <p>Stores and retrieves what the agent knows about the user — within a session (short-term) or across many sessions (long-term).</p>
+    </div>
+  </div>
+
+  <h2>How they relate</h2>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+      <thead><tr style="background:var(--surface-2);"><th style="padding:10px 16px;text-align:left;font-weight:500;">Technique</th><th style="padding:10px 16px;text-align:left;font-weight:500;">Problem it solves</th><th style="padding:10px 16px;text-align:left;font-weight:500;">Where it lives</th></tr></thead>
+      <tbody>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;font-weight:500;color:var(--accent-text);">MCP</td><td style="padding:10px 16px;color:var(--text-2);">"My agent can't access external systems"</td><td style="padding:10px 16px;color:var(--text-2);">Between agent and external services</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;font-weight:500;color:var(--green-text);">RAG</td><td style="padding:10px 16px;color:var(--text-2);">"My agent doesn't know the right facts"</td><td style="padding:10px 16px;color:var(--text-2);">Inside the prompt, at inference time</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;font-weight:500;color:var(--purple-text);">Memory</td><td style="padding:10px 16px;color:var(--text-2);">"My agent forgets who the user is"</td><td style="padding:10px 16px;color:var(--text-2);">Across turns and across sessions</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-colab">
+    <strong>Companion Colab</strong>
+    Read through each concept here first, complete the written activities, then open the Colab to build and run real implementations of MCP, RAG, and memory patterns.
+  </div>
+
+  <h2>Quick check — what problem does each solve?</h2>
+  <div id="q0"></div>
+  <div class="nav-buttons"><button class="btn btn-primary" id="next-0" onclick="goTo(1)">Next: MCP concepts →</button></div>
+</div>
+
+<!-- 1: MCP concepts -->
+<div class="section" id="s1">
+  <div class="section-tag tag-blue">MCP · 1 of 3</div>
+  <h1>MCP concepts</h1>
+  <p class="subtitle">Model Context Protocol is a standardized way for LLM-based agents to connect to external tools, data sources, and services — without writing custom integration code for each one.</p>
+
+  <h2>Why standardization matters</h2>
+  <p>Before MCP, connecting an agent to a new tool (a database, a calendar, a code executor) meant writing a one-off integration — custom auth, custom API calls, custom error handling — for every tool. MCP defines a single protocol that any tool can implement once, and any agent can use.</p>
+
+  <div class="callout callout-info">
+    <strong>The USB analogy</strong>
+    Before USB, every peripheral needed its own port. USB standardized the interface — any device, any computer, one plug. MCP does the same for agents and tools.
+  </div>
+
+  <h2>The five components</h2>
+  <p style="font-size:14px;color:var(--text-2);">Click each card to flip it and see what the component actually does in practice.</p>
+
+  <div class="flip-grid">
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Server</h4><p style="font-size:13px;color:var(--text-2);margin:4px 0 0;">Exposes capabilities to agents.</p><div class="hint">Click for example</div></div>
+        <div class="flip-back flip-back-blue"><div class="flip-label flip-label-blue">Example</div><p>A weather service runs an MCP server that exposes a <code>get_forecast</code> tool. Any agent using MCP can call it without knowing how the weather API works.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Client</h4><p style="font-size:13px;color:var(--text-2);margin:4px 0 0;">Works alongside the agent to communicate with servers.</p><div class="hint">Click for example</div></div>
+        <div class="flip-back flip-back-blue"><div class="flip-label flip-label-blue">Example</div><p>The MCP client sits between your agent and the server. When the agent decides to call <code>get_forecast</code>, the client handles the actual request/response over the MCP protocol.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Tools</h4><p style="font-size:13px;color:var(--text-2);margin:4px 0 0;">Functions the model can invoke.</p><div class="hint">Click for example</div></div>
+        <div class="flip-back flip-back-blue"><div class="flip-label flip-label-blue">Example</div><p><code>search_docs(query)</code>, <code>create_ticket(title, body)</code>, <code>send_email(to, subject, body)</code> — actions with side effects that the agent calls to do things.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Resources</h4><p style="font-size:13px;color:var(--text-2);margin:4px 0 0;">Read-only data the server can hand back.</p><div class="hint">Click for example</div></div>
+        <div class="flip-back flip-back-blue"><div class="flip-label flip-label-blue">Example</div><p>A database MCP server exposes a <code>schema</code> resource — the agent can read it to understand table structures without executing any query. No side effects.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Prompts</h4><p style="font-size:13px;color:var(--text-2);margin:4px 0 0;">Reusable prompt templates a server can offer.</p><div class="hint">Click for example</div></div>
+        <div class="flip-back flip-back-blue"><div class="flip-label flip-label-blue">Example</div><p>A code review server offers a <code>review_pr</code> prompt template — pre-filled with context about the repo's standards so the agent doesn't have to construct it from scratch.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>How they fit together</h2>
+  <div style="background:var(--surface-2);border-radius:12px;padding:1.25rem;margin:1rem 0;">
+    <div style="display:flex;align-items:center;gap:0;overflow-x:auto;">
+      <div style="background:var(--surface);border:.5px solid var(--border-strong);border-radius:10px;padding:.75rem 1rem;text-align:center;min-width:130px;">
+        <div style="font-size:12px;font-weight:600;color:var(--purple-text);">Your Agent</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:2px;">decides to call a tool</div>
+      </div>
+      <div style="flex:1;height:2px;background:var(--border-strong);min-width:20px;"></div>
+      <div style="background:var(--accent-bg);border:.5px solid var(--accent-border);border-radius:10px;padding:.75rem 1rem;text-align:center;min-width:110px;">
+        <div style="font-size:12px;font-weight:600;color:var(--accent-text);">MCP Client</div>
+        <div style="font-size:11px;color:var(--accent-text);margin-top:2px;opacity:.8;">routes the call</div>
+      </div>
+      <div style="flex:1;height:2px;background:var(--border-strong);min-width:20px;"></div>
+      <div style="background:var(--green-bg);border:.5px solid var(--green-border);border-radius:10px;padding:.75rem 1rem;text-align:center;min-width:110px;">
+        <div style="font-size:12px;font-weight:600;color:var(--green-text);">MCP Server</div>
+        <div style="font-size:11px;color:var(--green-text);margin-top:2px;opacity:.8;">runs the tool</div>
+      </div>
+      <div style="flex:1;height:2px;background:var(--border-strong);min-width:20px;"></div>
+      <div style="background:var(--surface);border:.5px solid var(--border-strong);border-radius:10px;padding:.75rem 1rem;text-align:center;min-width:130px;">
+        <div style="font-size:12px;font-weight:600;color:var(--text-2);">External Service</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:2px;">weather, DB, GitHub…</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Tools vs Resources vs Prompts</h2>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+      <thead><tr style="background:var(--surface-2);"><th style="padding:10px 16px;text-align:left;font-weight:500;">Type</th><th style="padding:10px 16px;text-align:left;font-weight:500;">Has side effects?</th><th style="padding:10px 16px;text-align:left;font-weight:500;">Use when</th></tr></thead>
+      <tbody>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;font-weight:500;color:var(--accent-text);">Tool</td><td style="padding:10px 16px;color:var(--text-2);">Yes — writes, sends, creates</td><td style="padding:10px 16px;color:var(--text-2);">Agent needs to do something in the world</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;font-weight:500;color:var(--green-text);">Resource</td><td style="padding:10px 16px;color:var(--text-2);">No — read only</td><td style="padding:10px 16px;color:var(--text-2);">Agent needs to read data safely</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;font-weight:500;color:var(--purple-text);">Prompt</td><td style="padding:10px 16px;color:var(--text-2);">No — template only</td><td style="padding:10px 16px;color:var(--text-2);">Agent needs a pre-built instruction set</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Required reading</h2>
+  <p class="section-hint">Open the link first — the checkbox won't tick until you've opened it.</p>
+  <div class="read-check" id="rc1a" onclick="toggleRead('rc1a')">
+    <div class="box" id="rc1a-box">✓</div>
+    <div><div style="font-weight:500;font-size:14px;">MCP Architecture — modelcontextprotocol.io</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: servers, clients, the message flow between them</div></div>
+    <a href="https://modelcontextprotocol.io/docs/learn/architecture" target="_blank" style="margin-left:auto;font-size:12px;color:var(--accent-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation();markOpened('rc1a')">Open ↗</a>
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q1"></div>
+  <div class="nav-buttons"><button class="btn" onclick="goTo(0)">← Back</button><button class="btn btn-primary" id="next-1" onclick="goTo(2)">Next: MCP in skills →</button></div>
+</div>
+
+<!-- 2: MCP in skills -->
+<div class="section" id="s2">
+  <div class="section-tag tag-blue">MCP · 2 of 3</div>
+  <h1>MCP in skills</h1>
+  <p class="subtitle">How to reference an MCP tool inside a skill's instructions — and the key rules for doing it right.</p>
+
+  <h2>Referencing an MCP tool in a skill</h2>
+  <p>When a skill needs to call an MCP tool, the instructions should specify the full tool name (server:tool), what to pass it, and what it returns. Don't leave any of this to inference.</p>
+
+  <pre style="font-size:12px;"><span class="c">---</span>
+<span class="n">name</span>: checking-weather
+<span class="n">description</span>: &gt;
+  Retrieves current weather for a given city. Use when the user asks
+  about weather, temperature, or conditions in any location.
+<span class="c">---</span>
+
+<span class="k">## Instructions</span>
+
+You are a weather assistant. When given a city name:
+
+1. Call the <span class="s">WeatherServer:get_forecast</span> tool with:
+   - <span class="s">city</span>: the city name from the user's request
+   - <span class="s">units</span>: "metric"
+
+2. The tool returns: temperature (°C), conditions, humidity, wind speed.
+
+3. Summarise the weather in one friendly sentence.
+   Format: "[City] is currently [conditions] at [temp]°C."</pre>
+
+  <div class="callout callout-warn">
+    <strong>Always use fully qualified tool names</strong>
+    <code>WeatherServer:get_forecast</code>, not just <code>get_forecast</code>. Without the server prefix, the agent may fail to locate the tool when multiple MCP servers are connected.
+  </div>
+
+  <h2>What makes a good MCP tool call in a skill</h2>
+  <div class="flip-grid" style="grid-template-columns:1fr 1fr;">
+    <div class="flip-card" onclick="this.classList.toggle('flipped')" style="height:150px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Name the server explicitly</h4><p style="font-size:13px;color:var(--text-2);margin:4px 0 0;"><code>Server:tool</code> format every time.</p><div class="hint">Click — why?</div></div>
+        <div class="flip-back flip-back-blue"><div class="flip-label flip-label-blue">Why it matters</div><p>Multiple servers can have tools with the same name. The prefix tells the MCP client exactly which server to route to — no ambiguity.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')" style="height:150px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Specify every parameter</h4><p style="font-size:13px;color:var(--text-2);margin:4px 0 0;">List what to pass and where it comes from.</p><div class="hint">Click — why?</div></div>
+        <div class="flip-back flip-back-blue"><div class="flip-label flip-label-blue">Why it matters</div><p>The agent won't guess well. If the skill says "call get_forecast with the city", the model doesn't know the parameter name, type, or format expected by the server.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')" style="height:150px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Describe what it returns</h4><p style="font-size:13px;color:var(--text-2);margin:4px 0 0;">Tell the agent what the output looks like.</p><div class="hint">Click — why?</div></div>
+        <div class="flip-back flip-back-blue"><div class="flip-label flip-label-blue">Why it matters</div><p>The agent needs to parse and use the tool's output. If it doesn't know the structure, it may miss fields or misformat the response.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')" style="height:150px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Handle tool failure</h4><p style="font-size:13px;color:var(--text-2);margin:4px 0 0;">Specify what to do if the tool errors.</p><div class="hint">Click — why?</div></div>
+        <div class="flip-back flip-back-blue"><div class="flip-label flip-label-blue">Why it matters</div><p>External tools fail. If the skill says nothing, the agent either halts or makes something up. Tell it: "If the tool returns an error, tell the user the data is unavailable and ask them to try again."</p></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Activity — write a skill that calls an MCP tool</h2>
+  <p style="font-size:14px;color:var(--text-2);">Write the <code>## Instructions</code> for a skill called <code>searching-docs</code> that calls a <code>DocsServer:search</code> tool. The tool takes a <code>query</code> string and returns a list of document titles and snippets. The skill should search for relevant docs and summarise what it finds in 2–3 bullet points.</p>
+  <textarea id="mcp-skill-input" placeholder="## Instructions&#10;&#10;You are a documentation assistant. When the user asks a question:&#10;&#10;1. Call the DocsServer:search tool with:&#10;   - query: ..."></textarea>
+  <div style="margin-top:.75rem;display:flex;gap:10px;align-items:center;">
+    <button class="btn btn-sm" onclick="checkMCPSkill()">Check my skill</button>
+    <div id="mcp-skill-result" style="font-size:13px;"></div>
+  </div>
+
+  <div class="nav-buttons"><button class="btn" onclick="goTo(1)">← Back</button><button class="btn btn-primary" id="next-2" onclick="goTo(3)">Next: MCP activity →</button></div>
+</div>
+
+<!-- 3: MCP activity -->
+<div class="section" id="s3">
+  <div class="section-tag tag-blue">MCP · 3 of 3</div>
+  <h1>Activity: Design an MCP server</h1>
+  <p class="subtitle">Design a small MCP server before building it in the Colab. Getting the interface right on paper first saves a lot of iteration in code.</p>
+
+  <div class="colab-callout"><div class="icon">💻</div><div><div class="label">Complete Activities 1 & 2 in the Colab</div><div class="sub">Activity 1: Build this server with FastMCP. Activity 2: Connect it to a skill and call a tool.</div></div></div>
+
+  <h2>Design your MCP server</h2>
+  <p style="font-size:14px;color:var(--text-2);">You're building an MCP server for a <strong>university study platform</strong>. Fill in the design below. Think carefully about which capabilities are tools (side effects) vs resources (read-only) vs prompts (templates).</p>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Server name & purpose</h3>
+    <div class="skill-field"><label>Server name</label><input type="text" id="mcp-server-name" placeholder="StudyServer" oninput="updateMCPPreview()"></div>
+    <div class="skill-field"><label>One-sentence purpose</label><input type="text" id="mcp-server-purpose" placeholder="Provides access to a university study platform for searching course materials, tracking assignments, and managing study sessions." oninput="updateMCPPreview()"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Tools (actions with side effects)</h3>
+    <div class="skill-field"><label>Tool 1 name + what it does</label><input type="text" id="mcp-tool1" placeholder="submit_assignment(course_id, title, file) — submits an assignment to the course portal" oninput="updateMCPPreview()"></div>
+    <div class="skill-field" style="margin-bottom:0;"><label>Tool 2 name + what it does</label><input type="text" id="mcp-tool2" placeholder="create_study_session(course_id, topic, duration) — logs a study session for a course" oninput="updateMCPPreview()"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Resources (read-only data)</h3>
+    <div class="skill-field"><label>Resource 1 name + what it exposes</label><input type="text" id="mcp-res1" placeholder="course_catalog — the full list of available courses with codes and descriptions" oninput="updateMCPPreview()"></div>
+    <div class="skill-field" style="margin-bottom:0;"><label>Resource 2 name + what it exposes</label><input type="text" id="mcp-res2" placeholder="grading_schema — the grading rubrics and weight breakdown for each course" oninput="updateMCPPreview()"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Prompt template</h3>
+    <div class="skill-field" style="margin-bottom:0;"><label>Prompt name + what it contains</label><input type="text" id="mcp-prompt1" placeholder="study_plan_template — template for generating a personalised study plan given a student's courses, deadlines, and available hours" oninput="updateMCPPreview()"></div>
+  </div>
+
+  <h3>Live preview</h3>
+  <div class="skill-preview" id="mcp-preview" style="min-height:180px;font-size:11px;">Fill in the fields above...</div>
+
+  <h2>Classify these capabilities</h2>
+  <p style="font-size:14px;color:var(--text-2);">Should each capability be a Tool, Resource, or Prompt?</p>
+  <div id="mcp-classify">
+    <div class="classify-row"><div class="classify-task">Delete a submitted assignment from the portal</div><select class="classify-select" data-answer="Tool" onchange="checkClassify(this)"><option value="">— choose —</option><option>Tool</option><option>Resource</option><option>Prompt</option></select></div>
+    <div class="classify-row"><div class="classify-task">Read the full list of available courses and their codes</div><select class="classify-select" data-answer="Resource" onchange="checkClassify(this)"><option value="">— choose —</option><option>Tool</option><option>Resource</option><option>Prompt</option></select></div>
+    <div class="classify-row"><div class="classify-task">A pre-built template for generating an essay outline</div><select class="classify-select" data-answer="Prompt" onchange="checkClassify(this)"><option value="">— choose —</option><option>Tool</option><option>Resource</option><option>Prompt</option></select></div>
+    <div class="classify-row"><div class="classify-task">Search lecture notes by keyword (no writes)</div><select class="classify-select" data-answer="Tool" onchange="checkClassify(this)"><option value="">— choose —</option><option>Tool</option><option>Resource</option><option>Prompt</option></select></div>
+  </div>
+  <div id="mcp-classify-result" style="display:none;margin-top:.75rem;" class="callout callout-tip">All correct! Notice that search is a Tool even though it only reads — it takes a dynamic parameter (the keyword), unlike a Resource which is static data the server always exposes.</div>
+
+  <div class="nav-buttons"><button class="btn" onclick="goTo(2)">← Back</button><button class="btn btn-primary" id="next-3" onclick="goTo(4)">Next: RAG concepts →</button></div>
+</div>
+
+<!-- 4: RAG concepts -->
+<div class="section" id="s4">
+  <div class="section-tag tag-green">RAG · 1 of 3</div>
+  <h1>RAG concepts</h1>
+  <p class="subtitle">Retrieval-Augmented Generation grounds a model's output in external documents at inference time — so it answers from evidence, not just training.</p>
+
+  <h2>Why RAG instead of just putting docs in the prompt?</h2>
+  <p>You can't fit a 10,000-page knowledge base into a context window. Even if you could, most of it is irrelevant to any given question — and irrelevant context degrades output quality.</p>
+
+  <div class="card-grid">
+    <div class="card-sm" style="border-top:3px solid var(--danger);">
+      <h4>Without RAG</h4>
+      <p style="font-size:13px;">Model answers from training data. Fine for general knowledge, breaks for proprietary or recent information.</p>
+    </div>
+    <div class="card-sm" style="border-top:3px solid var(--green);">
+      <h4>With RAG</h4>
+      <p style="font-size:13px;">Model retrieves the relevant chunks first, then answers using them as evidence. Works for any document store, any domain.</p>
+    </div>
+  </div>
+
+  <h2>The key insight: retrieval as a skill</h2>
+  <p>RAG isn't a model technique — it's a pipeline you build. The model's job is still generation. The retrieval step is a separate system (often a vector database) that finds the right evidence before the model even sees the question.</p>
+
+  <div class="callout callout-info">
+    <strong>Where RAG fits in your agent system</strong>
+    RAG is typically implemented as a tool or subagent. Your skill calls <code>retrieve_docs(query)</code>, gets back relevant chunks, injects them into the prompt, and then generates the answer. The model never "knows" the documents — it only sees what retrieval surfaces.
+  </div>
+
+  <h2>Required reading</h2>
+  <p class="section-hint">Open the link first — the checkbox won't tick until you've opened it.</p>
+  <div class="read-check" id="rc4a" onclick="toggleRead('rc4a')">
+    <div class="box" id="rc4a-box">✓</div>
+    <div><div style="font-weight:500;font-size:14px;">What is RAG? — Pinecone</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: why retrieval helps, the full pipeline overview, embeddings intuition</div></div>
+    <a href="https://www.pinecone.io/learn/retrieval-augmented-generation/" target="_blank" style="margin-left:auto;font-size:12px;color:var(--green-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation();markOpened('rc4a')">Open ↗</a>
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q4"></div>
+  <div class="nav-buttons"><button class="btn" onclick="goTo(3)">← Back</button><button class="btn btn-primary" id="next-4" onclick="goTo(5)">Next: The RAG pipeline →</button></div>
+</div>
+
+<!-- 5: RAG pipeline -->
+<div class="section" id="s5">
+  <div class="section-tag tag-green">RAG · 2 of 3</div>
+  <h1>The RAG pipeline</h1>
+  <p class="subtitle">Six steps from raw documents to a grounded answer. Each step has a clear job — and a clear failure mode.</p>
+
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-num" style="background:var(--accent);">1</div><div class="pipe-line" style="background:var(--accent-border);"></div></div>
+      <div class="pipe-body"><h4>Chunking</h4><p>Split source documents into small, overlapping pieces. Too large: retrieval is imprecise. Too small: chunks lose context. Typical: 256–512 tokens with 10–20% overlap.</p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-num" style="background:var(--accent);">2</div><div class="pipe-line" style="background:var(--accent-border);"></div></div>
+      <div class="pipe-body"><h4>Embedding</h4><p>Convert each chunk into a vector (a list of numbers) using an embedding model. Semantically similar chunks get vectors that are close together in vector space.</p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-num" style="background:var(--accent);">3</div><div class="pipe-line" style="background:var(--accent-border);"></div></div>
+      <div class="pipe-body"><h4>Indexing</h4><p>Store the vectors in a vector database (e.g. Pinecone). The database is optimised for fast nearest-neighbour search — finding which vectors are closest to a query vector.</p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-num" style="background:var(--green);">4</div><div class="pipe-line" style="background:var(--green-border);"></div></div>
+      <div class="pipe-body"><h4>Retrieval</h4><p>At inference time, embed the user's query using the same embedding model. Fetch the top-k chunks whose vectors are closest to the query vector. Typically k = 3–10.</p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-num" style="background:var(--green);">5</div><div class="pipe-line" style="background:var(--green-border);"></div></div>
+      <div class="pipe-body"><h4>Augmentation</h4><p>Insert the retrieved chunks into the prompt as context, before the user's question. The model now has evidence to reason from.</p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-num" style="background:var(--green);">6</div></div>
+      <div class="pipe-body"><h4>Generation</h4><p>The model reads the retrieved context and the question, then generates an answer grounded in the evidence. It can cite specific chunks if instructed to.</p></div>
+    </div>
+  </div>
+
+  <h2>Order the pipeline</h2>
+  <p style="font-size:14px;color:var(--text-2);">Drag the steps into the correct order.</p>
+  <ul class="sort-list" id="rag-sort">
+    <li class="sort-item" draggable="true" data-order="5"><span class="grip">⠿</span>Augmentation — insert chunks into the prompt</li>
+    <li class="sort-item" draggable="true" data-order="2"><span class="grip">⠿</span>Embedding — convert chunks to vectors</li>
+    <li class="sort-item" draggable="true" data-order="6"><span class="grip">⠿</span>Generation — model answers using retrieved context</li>
+    <li class="sort-item" draggable="true" data-order="1"><span class="grip">⠿</span>Chunking — split documents into small pieces</li>
+    <li class="sort-item" draggable="true" data-order="4"><span class="grip">⠿</span>Retrieval — embed query and fetch top-k similar chunks</li>
+    <li class="sort-item" draggable="true" data-order="3"><span class="grip">⠿</span>Indexing — store vectors in a vector database</li>
+  </ul>
+  <button class="btn btn-sm" style="margin-top:8px;" onclick="checkRAGOrder()">Check order</button>
+  <div id="rag-order-result" style="display:none;margin-top:8px;font-size:13.5px;"></div>
+
+  <h2>What goes wrong at each step</h2>
+  <p style="font-size:14px;color:var(--text-2);">Click each card to reveal the failure mode.</p>
+  <div class="flip-grid" style="grid-template-columns:repeat(3,1fr);">
+    <div class="flip-card" onclick="this.classList.toggle('flipped')" style="height:140px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Chunking</h4><p style="font-size:12px;color:var(--text-2);margin:4px 0;">What breaks here?</p><div class="hint">Click to reveal</div></div>
+        <div class="flip-back flip-back-green"><div class="flip-label flip-label-green">Failure mode</div><p>Chunks too large → retrieved context is noisy and imprecise. Chunks too small → important sentences are split across chunks and lose meaning.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')" style="height:140px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Embedding</h4><p style="font-size:12px;color:var(--text-2);margin:4px 0;">What breaks here?</p><div class="hint">Click to reveal</div></div>
+        <div class="flip-back flip-back-green"><div class="flip-label flip-label-green">Failure mode</div><p>Mismatched embedding models: if you index with Model A but retrieve with Model B, the vectors are in different spaces and similarity search breaks entirely.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')" style="height:140px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Retrieval</h4><p style="font-size:12px;color:var(--text-2);margin:4px 0;">What breaks here?</p><div class="hint">Click to reveal</div></div>
+        <div class="flip-back flip-back-green"><div class="flip-label flip-label-green">Failure mode</div><p>k too low → miss relevant chunks. k too high → flood the context with noisy chunks that confuse the model and waste tokens.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')" style="height:140px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Augmentation</h4><p style="font-size:12px;color:var(--text-2);margin:4px 0;">What breaks here?</p><div class="hint">Click to reveal</div></div>
+        <div class="flip-back flip-back-green"><div class="flip-label flip-label-green">Failure mode</div><p>No instruction telling the model to use the context. The model may ignore the retrieved chunks entirely and answer from training memory anyway.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')" style="height:140px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Generation</h4><p style="font-size:12px;color:var(--text-2);margin:4px 0;">What breaks here?</p><div class="hint">Click to reveal</div></div>
+        <div class="flip-back flip-back-green"><div class="flip-label flip-label-green">Failure mode</div><p>Model hallucinates despite having context — either ignoring it, or mixing it with training knowledge in contradictory ways. Eval catches this.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Required reading</h2>
+  <p class="section-hint">Open the link first — the checkbox won't tick until you've opened it.</p>
+  <div class="read-check" id="rc5a" onclick="toggleRead('rc5a')">
+    <div class="box" id="rc5a-box">✓</div>
+    <div><div style="font-weight:500;font-size:14px;">Pinecone Get Started — Overview</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: vector databases, indexing, querying, how similarity search works</div></div>
+    <a href="https://docs.pinecone.io/guides/get-started/overview" target="_blank" style="margin-left:auto;font-size:12px;color:var(--green-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation();markOpened('rc5a')">Open ↗</a>
+  </div>
+
+  <div class="nav-buttons"><button class="btn" onclick="goTo(4)">← Back</button><button class="btn btn-primary" id="next-5" onclick="goTo(6)">Next: RAG evaluations →</button></div>
+</div>
+
+<!-- 6: RAG evaluations -->
+<div class="section" id="s6">
+  <div class="section-tag tag-green">RAG · 3 of 3</div>
+  <h1>RAG evaluations</h1>
+  <p class="subtitle">Building a RAG pipeline is the easy part. Knowing whether it's working is harder. Two metrics tell you most of what you need to know.</p>
+
+  <h2>The two core metrics</h2>
+  <div class="card-grid">
+    <div class="card-sm" style="border-top:3px solid var(--green);">
+      <span class="pill pill-green">Context recall</span>
+      <h4 style="margin-top:8px;">Did retrieval find what was needed?</h4>
+      <p style="font-size:13px;">What fraction of the relevant information that exists in your document store actually got retrieved? Low recall = the right chunks weren't found.</p>
+      <div style="margin-top:10px;font-size:12px;color:var(--text-3);">Low recall → fix chunking or increase k</div>
+    </div>
+    <div class="card-sm" style="border-top:3px solid var(--accent);">
+      <span class="pill pill-blue">Context precision</span>
+      <h4 style="margin-top:8px;">Was what was retrieved actually useful?</h4>
+      <p style="font-size:13px;">What fraction of the retrieved chunks were actually relevant to the query? Low precision = lots of noise flooding the context.</p>
+      <div style="margin-top:10px;font-size:12px;color:var(--text-3);">Low precision → refine chunking or decrease k</div>
+    </div>
+  </div>
+
+  <h2>Interpreting the scores</h2>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+      <thead><tr style="background:var(--surface-2);"><th style="padding:10px 16px;text-align:left;font-weight:500;">Recall</th><th style="padding:10px 16px;text-align:left;font-weight:500;">Precision</th><th style="padding:10px 16px;text-align:left;font-weight:500;">What it means</th><th style="padding:10px 16px;text-align:left;font-weight:500;">Fix</th></tr></thead>
+      <tbody>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;color:var(--success);">High</td><td style="padding:10px 16px;color:var(--success);">High</td><td style="padding:10px 16px;color:var(--text-2);">Ideal — found the right chunks, nothing else</td><td style="padding:10px 16px;color:var(--text-2);">—</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;color:var(--danger);">Low</td><td style="padding:10px 16px;color:var(--success);">High</td><td style="padding:10px 16px;color:var(--text-2);">Precise but incomplete — missing relevant chunks</td><td style="padding:10px 16px;color:var(--text-2);">Increase k, re-chunk</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;color:var(--success);">High</td><td style="padding:10px 16px;color:var(--danger);">Low</td><td style="padding:10px 16px;color:var(--text-2);">Complete but noisy — too much irrelevant context</td><td style="padding:10px 16px;color:var(--text-2);">Decrease k, smaller chunks</td></tr>
+        <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;color:var(--danger);">Low</td><td style="padding:10px 16px;color:var(--danger);">Low</td><td style="padding:10px 16px;color:var(--text-2);">Wrong chunks entirely — embedding or indexing problem</td><td style="padding:10px 16px;color:var(--text-2);">Check embedding model</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Required reading</h2>
+  <p class="section-hint">Open the link first — the checkbox won't tick until you've opened it.</p>
+  <div class="read-check" id="rc6a" onclick="toggleRead('rc6a')">
+    <div class="box" id="rc6a-box">✓</div>
+    <div><div style="font-weight:500;font-size:14px;">RAGAS Metrics Overview</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: context recall, context precision, how they're computed</div></div>
+    <a href="https://docs.ragas.io/en/stable/concepts/metrics/overview/" target="_blank" style="margin-left:auto;font-size:12px;color:var(--green-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation();markOpened('rc6a')">Open ↗</a>
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q6"></div>
+  <div class="nav-buttons"><button class="btn" onclick="goTo(5)">← Back</button><button class="btn btn-primary" id="next-6" onclick="goTo(7)">Next: Memory concepts →</button></div>
+</div>
+
+<!-- 7: Memory concepts -->
+<div class="section" id="s7">
+  <div class="section-tag tag-purple">Memory · 1 of 3</div>
+  <h1>Memory concepts</h1>
+  <p class="subtitle">Memory is what the agent knows about the user — within a conversation (short-term) or across many sessions over time (long-term).</p>
+
+  <h2>Short-term vs long-term memory</h2>
+  <div class="card-grid">
+    <div class="card-sm" style="border-top:3px solid var(--purple);">
+      <span class="pill pill-purple">Short-term</span>
+      <h4 style="margin-top:8px;">Within a session</h4>
+      <p>What the agent learned during this conversation. It's in the context window. When the session ends, it's gone unless explicitly saved.</p>
+      <div style="margin-top:8px;font-size:12px;color:var(--text-3);">Example: "The student mentioned they have an exam on Thursday three messages ago — keep answers concise."</div>
+    </div>
+    <div class="card-sm" style="border-top:3px solid var(--accent);">
+      <span class="pill pill-blue">Long-term</span>
+      <h4 style="margin-top:8px;">Across sessions</h4>
+      <p>Persisted facts about the user, written to a store after each session and retrieved at the start of the next one.</p>
+      <div style="margin-top:8px;font-size:12px;color:var(--text-3);">Example: "This student prefers visual explanations with worked examples and studies best in 45-minute blocks."</div>
+    </div>
+  </div>
+
+  <h2>Why memory matters</h2>
+  <p>Without memory, every session starts from scratch. The user has to re-explain their preferences, context, and constraints every time. With long-term memory, the agent already knows who it's talking to — and the experience feels personal rather than generic.</p>
+
+  <div class="callout callout-info">
+    <strong>Memory as a form of personalization at scale</strong>
+    A skilled human assistant remembers your preferences without being asked. Memory gives your agent the same capability — not by making the model smarter, but by giving it the right context at the right time.
+  </div>
+
+  <h2>Flip the scenarios</h2>
+  <p style="font-size:14px;color:var(--text-2);">For each scenario, decide: short-term or long-term memory? Click to reveal.</p>
+  <div class="flip-grid" style="grid-template-columns:1fr 1fr;">
+    <div class="flip-card" onclick="this.classList.toggle('flipped')" style="height:155px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Student mentions their exam is on Thursday mid-conversation</h4><p style="font-size:12px;color:var(--text-2);margin:4px 0;">What type of memory?</p><div class="hint">Click to reveal</div></div>
+        <div class="flip-back flip-back-purple"><div class="flip-label flip-label-purple">Short-term</div><p>Lives in the context window for this session. Should also be written to long-term memory so future sessions always account for this deadline.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')" style="height:155px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Student always wants explanations with worked examples</h4><p style="font-size:12px;color:var(--text-2);margin:4px 0;">What type of memory?</p><div class="hint">Click to reveal</div></div>
+        <div class="flip-back flip-back-purple"><div class="flip-label flip-label-purple">Long-term</div><p>A stable learning preference that should persist across every session. Retrieved at the start of any explaining or tutoring skill.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')" style="height:155px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Student's preferred study session length this session</h4><p style="font-size:12px;color:var(--text-2);margin:4px 0;">What type of memory?</p><div class="hint">Click to reveal</div></div>
+        <div class="flip-back flip-back-purple"><div class="flip-label flip-label-purple">Short-term (maybe long-term)</div><p>If it's a one-off preference ("I only have 20 mins today"), short-term only. If it's consistent across sessions, write it to long-term memory.</p></div>
+      </div>
+    </div>
+    <div class="flip-card" onclick="this.classList.toggle('flipped')" style="height:155px;">
+      <div class="flip-inner">
+        <div class="flip-front"><h4>Student's degree programme and year</h4><p style="font-size:12px;color:var(--text-2);margin:4px 0;">What type of memory?</p><div class="hint">Click to reveal</div></div>
+        <div class="flip-back flip-back-purple"><div class="flip-label flip-label-purple">Long-term</div><p>A stable fact that should be retrieved automatically to tailor explanations to the right level and curriculum. No need to ask every time.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Required reading</h2>
+  <p class="section-hint">Open the link first — the checkbox won't tick until you've opened it.</p>
+  <div class="read-check" id="rc7a" onclick="toggleRead('rc7a')">
+    <div class="box" id="rc7a-box">✓</div>
+    <div><div style="font-weight:500;font-size:14px;">Memory Tool — Claude Platform Docs</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: how memory is stored and retrieved, the memory tool interface</div></div>
+    <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool" target="_blank" style="margin-left:auto;font-size:12px;color:var(--purple-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation();markOpened('rc7a')">Open ↗</a>
+  </div>
+
+  <h2>Quick check</h2>
+  <div id="q7"></div>
+  <div class="nav-buttons"><button class="btn" onclick="goTo(6)">← Back</button><button class="btn btn-primary" id="next-7" onclick="goTo(8)">Next: Memory patterns →</button></div>
+</div>
+
+<!-- 8: Memory patterns -->
+<div class="section" id="s8">
+  <div class="section-tag tag-purple">Memory · 2 of 3</div>
+  <h1>Memory patterns in skills</h1>
+  <p class="subtitle">Three ways memory integrates with agent skills — each with a different role and a different place in the workflow.</p>
+
+  <div class="pattern-card" id="mp0" onclick="togglePattern('mp0')">
+    <div class="pattern-header">
+      <div class="pattern-icon" style="background:var(--purple-bg);color:var(--purple-text);">🎯</div>
+      <div><h4>Memory as a trigger for skill selection</h4><p>Helps the orchestrator decide which skill to invoke</p></div>
+      <div class="pattern-chevron">▼</div>
+    </div>
+    <div class="pattern-body">
+      <p style="font-size:14px;">The orchestrator reads memory before deciding what to do. Stored preferences change which skill gets called.</p>
+      <div class="card" style="font-size:13.5px;margin-top:.5rem;">
+        <div style="font-weight:500;margin-bottom:6px;">Example</div>
+        <p style="margin:0;color:var(--text-2);">Memory says: <code>"user_prefers_concise: true"</code><br>
+        Orchestrator reads this → calls <code>summarizing-response</code> skill at the end of every reply instead of returning the full answer directly.</p>
+      </div>
+      <div class="callout callout-tip" style="margin-top:.75rem;">
+        <strong>When to use it</strong>
+        When a preference should change the flow of the whole interaction — not just one response.
+      </div>
+    </div>
+  </div>
+
+  <div class="pattern-card" id="mp1" onclick="togglePattern('mp1')">
+    <div class="pattern-header">
+      <div class="pattern-icon" style="background:var(--purple-bg);color:var(--purple-text);">⚙️</div>
+      <div><h4>Memory as a parameter for skills</h4><p>Skill uses memory as input to personalise the response</p></div>
+      <div class="pattern-chevron">▼</div>
+    </div>
+    <div class="pattern-body">
+      <p style="font-size:14px;">Memory is passed into the skill as part of the input. The skill is the same for every user — the memory is what makes the output personal.</p>
+      <div class="card" style="font-size:13.5px;margin-top:.5rem;">
+        <div style="font-weight:500;margin-bottom:6px;">Example</div>
+        <p style="margin:0;color:var(--text-2);">Memory says: <code>"email_signoff: 'Sincerely, Alex'"</code><br>
+        The <code>drafting-email</code> skill receives this as a parameter → appends "Sincerely, Alex" to every email without being asked.</p>
+      </div>
+      <pre style="font-size:11.5px;margin-top:.75rem;"><span class="k">## Instructions</span>
+Draft a professional email for the user.
+
+User memory:
+- Preferred sign-off: <span class="s">{memory.email_signoff}</span>
+- Preferred tone: <span class="s">{memory.email_tone}</span>
+
+Always use the sign-off and tone from memory.</pre>
+    </div>
+  </div>
+
+  <div class="pattern-card" id="mp2" onclick="togglePattern('mp2')">
+    <div class="pattern-header">
+      <div class="pattern-icon" style="background:var(--purple-bg);color:var(--purple-text);">✍️</div>
+      <div><h4>Skills that write to memory</h4><p>Focused on updating memory based on the conversation</p></div>
+      <div class="pattern-chevron">▼</div>
+    </div>
+    <div class="pattern-body">
+      <p style="font-size:14px;">Some skills exist specifically to extract and store facts about the user. They run in the background after interactions and update the memory store.</p>
+      <div class="card" style="font-size:13.5px;margin-top:.5rem;">
+        <div style="font-weight:500;margin-bottom:6px;">Example</div>
+        <p style="margin:0;color:var(--text-2);">After a study session, the <code>updating-student-profile</code> skill runs and writes:<br>
+        <code>{"learning_style": "visual", "preferred_session_length": "45min", "weak_subjects": ["calculus"]}</code> to the memory store.</p>
+      </div>
+      <div class="callout callout-warn" style="margin-top:.75rem;">
+        <strong>Be explicit about what gets written</strong>
+        Don't let the agent write whatever it infers. Define exactly which fields the memory-writing skill updates, and what evidence it needs before writing. Vague writes create noisy, unreliable memory.
+      </div>
+    </div>
+  </div>
+
+  <h2>Match the scenario to the pattern</h2>
+  <div id="mem-classify">
+    <div class="classify-row"><div class="classify-task">After a conversation, extract that the user prefers bullet-point summaries and save it</div><select class="classify-select" data-answer="Write" onchange="checkClassify(this)"><option value="">— pattern? —</option><option>Trigger</option><option>Parameter</option><option>Write</option></select></div>
+    <div class="classify-row"><div class="classify-task">Pull the user's home city from memory and pass it to the weather skill as an input</div><select class="classify-select" data-answer="Parameter" onchange="checkClassify(this)"><option value="">— pattern? —</option><option>Trigger</option><option>Parameter</option><option>Write</option></select></div>
+    <div class="classify-row"><div class="classify-task">Memory shows the user is an expert — skip the beginner explanation skill entirely</div><select class="classify-select" data-answer="Trigger" onchange="checkClassify(this)"><option value="">— pattern? —</option><option>Trigger</option><option>Parameter</option><option>Write</option></select></div>
+    <div class="classify-row"><div class="classify-task">User always wants responses in Spanish — pass this to every skill as a language parameter</div><select class="classify-select" data-answer="Parameter" onchange="checkClassify(this)"><option value="">— pattern? —</option><option>Trigger</option><option>Parameter</option><option>Write</option></select></div>
+  </div>
+  <div id="mem-classify-result" style="display:none;margin-top:.75rem;" class="callout callout-tip">All correct!</div>
+
+  <h2>Required reading</h2>
+  <p class="section-hint">Open the link first — the checkbox won't tick until you've opened it.</p>
+  <div class="read-check" id="rc8a" onclick="toggleRead('rc8a')">
+    <div class="box" id="rc8a-box">✓</div>
+    <div><div style="font-weight:500;font-size:14px;">LangChain Memory — LangGraph docs</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">Focus on: short vs long-term memory, how to read and write memory in an agent loop</div></div>
+    <a href="https://docs.langchain.com/oss/python/langgraph/memory" target="_blank" style="margin-left:auto;font-size:12px;color:var(--purple-text);text-decoration:none;white-space:nowrap;" onclick="event.stopPropagation();markOpened('rc8a')">Open ↗</a>
+  </div>
+
+  <div class="nav-buttons"><button class="btn" onclick="goTo(7)">← Back</button><button class="btn btn-primary" id="next-8" onclick="goTo(9)">Next: Watch out for →</button></div>
+</div>
+
+<!-- 9: Watch out for -->
+<div class="section" id="s9">
+  <div class="section-tag tag-amber">Watch out for</div>
+  <h1>Things to watch out for</h1>
+  <p class="subtitle">MCP, RAG, and memory each introduce failure modes that don't exist in simpler agent systems. Know them before you build.</p>
+
+  <h2>Memory bloat</h2>
+  <p>Just like context bloat from Week 2, memory stores can grow unbounded — accumulating redundant, contradictory, or stale facts over time. A memory store that keeps everything eventually becomes too noisy to be useful.</p>
+  <div class="card" style="border-left:3px solid var(--amber);">
+    <div style="font-weight:500;margin-bottom:8px;color:var(--amber-text);">Symptoms</div>
+    <ul style="font-size:13.5px;margin:0;">
+      <li>Agent pulls old, outdated preferences that contradict what the user just said</li>
+      <li>Memory retrieval returns too many results and floods the context</li>
+      <li>Conflicting facts in memory cause inconsistent agent behavior</li>
+    </ul>
+    <div style="font-weight:500;margin:10px 0 8px;color:var(--amber-text);">Mitigations</div>
+    <ul style="font-size:13.5px;margin:0;">
+      <li>Write memory with timestamps — prefer recent over old</li>
+      <li>Limit the number of active memory entries per category</li>
+      <li>Run a periodic "memory consolidation" skill that merges and de-duplicates</li>
+    </ul>
+  </div>
+
+  <h2>Skill drift</h2>
+  <p>As the agent learns more about the user, its behavior can drift further and further from the original skill design. A skill built for a general audience starts behaving very differently for a heavily-profiled user — sometimes in ways you didn't intend.</p>
+  <div class="card" style="border-left:3px solid var(--coral);">
+    <div style="font-weight:500;margin-bottom:8px;color:var(--coral-text);">Example</div>
+    <p style="font-size:13.5px;color:var(--text-2);margin:0;">Memory says the student prefers concise answers. Over time, the explanation skill starts giving one-line answers — technically following the preference, but now too brief to actually teach anything. The skill has drifted.</p>
+    <div style="font-weight:500;margin:10px 0 8px;color:var(--coral-text);">Mitigation</div>
+    <p style="font-size:13.5px;color:var(--text-2);margin:0;">Set hard constraints in the skill instructions that memory parameters cannot override: "Regardless of length preferences, explanations must include a definition, an example, and a summary."</p>
+  </div>
+
+  <h2>MCP tool trust</h2>
+  <div class="card" style="border-left:3px solid var(--accent);">
+    <p style="font-size:13.5px;color:var(--text-2);margin:0;">Not all MCP servers are trustworthy. A compromised or malicious server could return crafted responses that prompt-inject the agent. Always validate MCP tool outputs before passing them into further reasoning — especially if the server is external or community-provided.</p>
+  </div>
+
+  <h2>RAG retrieval without grounding instructions</h2>
+  <div class="card" style="border-left:3px solid var(--green);">
+    <p style="font-size:13.5px;color:var(--text-2);margin:0;">Retrieving relevant chunks is only half the job. If the prompt doesn't explicitly tell the model to use the retrieved context — or to say "I don't know" when context is insufficient — the model will default to training memory and hallucinate. Always include: "Answer only using the context below. If the context doesn't contain the answer, say so."</p>
+  </div>
+
+  <h2>Spot the problem</h2>
+  <p style="font-size:14px;color:var(--text-2);">Match each symptom to the most likely cause.</p>
+  <div id="watchout-classify">
+    <div class="classify-row"><div class="classify-task">Agent writes emails that are now just one sentence, even for important clients</div><select class="classify-select" data-answer="Skill drift" onchange="checkClassify(this)"><option value="">— cause? —</option><option>Memory bloat</option><option>Skill drift</option><option>Missing grounding instruction</option><option>MCP trust issue</option></select></div>
+    <div class="classify-row"><div class="classify-task">RAG system retrieves the right chunks but the model answers from training anyway</div><select class="classify-select" data-answer="Missing grounding instruction" onchange="checkClassify(this)"><option value="">— cause? —</option><option>Memory bloat</option><option>Skill drift</option><option>Missing grounding instruction</option><option>MCP trust issue</option></select></div>
+    <div class="classify-row"><div class="classify-task">Agent contradicts itself — says the student is a beginner in one message, advanced in the next</div><select class="classify-select" data-answer="Memory bloat" onchange="checkClassify(this)"><option value="">— cause? —</option><option>Memory bloat</option><option>Skill drift</option><option>Missing grounding instruction</option><option>MCP trust issue</option></select></div>
+  </div>
+  <div id="watchout-classify-result" style="display:none;margin-top:.75rem;" class="callout callout-tip">All correct!</div>
+
+  <div class="nav-buttons"><button class="btn" onclick="goTo(8)">← Back</button><button class="btn btn-primary" id="next-9" onclick="goTo(10)">Activities →</button></div>
+</div>
+
+<!-- 10: Activities -->
+<div class="section" id="s10">
+  <div class="section-tag tag-green">Activities</div>
+  <h1>Activity: RAG pipeline design</h1>
+  <p class="subtitle">Design a RAG system for a specific use case before implementing it in the Colab.</p>
+
+  <div class="colab-callout"><div class="icon">💻</div><div><div class="label">Complete Activity 3 in the Colab</div><div class="sub">Build and run the RAG pipeline you design here using Pinecone and Gemini.</div></div></div>
+
+  <h2>Scenario: University study assistant knowledge base</h2>
+  <p style="font-size:14px;color:var(--text-2);">A university study assistant has access to 5,000 lecture notes, textbook chapters, and past exam papers across all departments. Students ask questions like "explain the central limit theorem" or "what were the key causes of World War 1?". Design a RAG system to answer these accurately.</p>
+
+  <h3>Step 1 — Chunking strategy</h3>
+  <p style="font-size:14px;color:var(--text-2);">How would you chunk a lecture note or textbook chapter? Consider what information needs to stay together to be useful.</p>
+  <textarea id="a-chunking" placeholder="Each lecture note would be chunked by...&#10;&#10;Chunk size: ~___ tokens&#10;Overlap: ___&#10;&#10;I'd keep [X] together because...&#10;I wouldn't split [Y] because..."></textarea>
+
+  <h3 style="margin-top:1.5rem;">Step 2 — Retrieval design</h3>
+  <p style="font-size:14px;color:var(--text-2);">What k value would you use, and why? What metadata would you store alongside each vector to help filter results?</p>
+  <textarea id="a-retrieval" placeholder="k = ___ because...&#10;&#10;Metadata I'd store:&#10;- course code (to filter by subject)&#10;- document type (lecture note, textbook, past paper)&#10;- week number (to filter by curriculum stage)&#10;- ..."></textarea>
+
+  <h3 style="margin-top:1.5rem;">Step 3 — Augmentation prompt</h3>
+  <p style="font-size:14px;color:var(--text-2);">Write the augmentation section of the skill prompt — the part that injects retrieved chunks and tells the model how to use them.</p>
+  <textarea id="a-grounding-prompt" placeholder="Use the following course materials to answer the student's question.&#10;&#10;Retrieved content:&#10;{retrieved_chunks}&#10;&#10;Instructions:&#10;- Answer only using the materials above&#10;- If the materials don't contain the answer, say so&#10;- Cite the source document where possible&#10;- ..."></textarea>
+
+  <h3 style="margin-top:1.5rem;">Step 4 — Evaluation plan</h3>
+  <p style="font-size:14px;color:var(--text-2);">How would you measure whether your RAG system is working? Write 2 test queries, what the correct answer should be, and which metric (recall or precision) is most important to check first.</p>
+  <textarea id="a-rag-eval" placeholder="Test query 1: 'Explain the central limit theorem'&#10;Expected: Chunks from the statistics lecture notes and textbook chapter 4...&#10;Most important metric: context recall — because missing a relevant explanation is worse than a little noise&#10;&#10;Test query 2: ..."></textarea>
+
+  <h2 style="margin-top:2rem;">Memory pattern design</h2>
+  <p style="font-size:14px;color:var(--text-2);">The study assistant wants to remember each student's learning style, preferred study session length, and weak subjects. Design three skills — one for each memory pattern.</p>
+
+  <div class="card" style="margin-bottom:10px;">
+    <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--purple-text);margin-bottom:8px;">Pattern 1 — Memory as trigger</div>
+    <p style="font-size:13.5px;color:var(--text-2);margin-bottom:8px;">If memory shows the student struggles with a subject, which skill should the orchestrator add before answering? What does that skill do?</p>
+    <textarea id="a-mem-trigger" placeholder="If memory shows weak_subjects includes 'calculus', the orchestrator adds the [skill-name] skill which..."></textarea>
+  </div>
+
+  <div class="card" style="margin-bottom:10px;">
+    <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--purple-text);margin-bottom:8px;">Pattern 2 — Memory as parameter</div>
+    <p style="font-size:13.5px;color:var(--text-2);margin-bottom:8px;">Write the instructions snippet for a study-planning skill that pulls learning preferences from memory.</p>
+    <textarea id="a-mem-parameter" placeholder="## Instructions&#10;&#10;You are a study planner.&#10;&#10;Student memory:&#10;- Preferred session length: {memory.preferred_session_length}&#10;- Learning style: {memory.learning_style}&#10;- Weak subjects: {memory.weak_subjects}&#10;&#10;Always tailor the study plan to..."></textarea>
+  </div>
+
+  <div class="card">
+    <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--purple-text);margin-bottom:8px;">Pattern 3 — Write to memory</div>
+    <p style="font-size:13.5px;color:var(--text-2);margin-bottom:8px;">After a study session, what facts should a memory-writing skill extract and save? Write the exact fields it writes.</p>
+    <textarea id="a-mem-write" placeholder="The updating-student-profile skill writes:&#10;- learning_style: [extracted from how student responds to explanations]&#10;- weak_subjects: ...&#10;- preferred_session_length: ...&#10;&#10;Evidence required before writing: ..."></textarea>
+  </div>
+
+  <div class="nav-buttons"><button class="btn" onclick="goTo(9)">← Back</button><button class="btn btn-primary" id="next-10" onclick="goTo(11)">Reflection →</button></div>
+</div>
+
+<!-- 11: Reflection -->
+<div class="section" id="s11">
+  <div class="section-tag tag-amber">Wrap-up</div>
+  <h1>Reflection</h1>
+  <p class="subtitle">Answer the questions below and submit screenshots in the Google Form.</p>
+
+  <div class="card" style="margin-bottom:1rem;">
+    <div style="font-size:12px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Question 1</div>
+    <p style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:8px;">A teammate says "let's just put all 5,000 lecture notes in the prompt context." What are the two problems with this, and how does RAG solve each?</p>
+    <textarea id="reflect-rag" placeholder="Problem 1: Context window limits...&#10;Problem 2: Irrelevant lecture notes distract the model...&#10;&#10;RAG solves this by..."></textarea>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem;">
+    <div style="font-size:12px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Question 2</div>
+    <p style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:8px;">Your RAG system has high recall but low precision. In plain terms, what is happening, and what would you change?</p>
+    <textarea id="reflect-precision" placeholder="High recall + low precision means... The fix is..."></textarea>
+  </div>
+
+  <div class="card">
+    <div style="font-size:12px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Question 3</div>
+    <p style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:8px;">Describe one situation where long-term memory would significantly improve a student's experience with the study assistant, and one risk you'd need to guard against.</p>
+    <textarea id="reflect-memory" placeholder="Benefit: ...&#10;&#10;Risk: ...&#10;&#10;Guard against it by: ..."></textarea>
+  </div>
+
+  <h2>Resources</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:.5rem;">
+    <a href="https://modelcontextprotocol.io/docs/learn/architecture" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:var(--accent-text);text-decoration:none;font-size:13.5px;font-weight:500;padding:6px 14px;border:.5px solid var(--accent-border);border-radius:var(--radius);background:var(--accent-bg);">MCP Architecture ↗</a>
+    <a href="https://www.pinecone.io/learn/retrieval-augmented-generation/" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:var(--green-text);text-decoration:none;font-size:13.5px;font-weight:500;padding:6px 14px;border:.5px solid var(--green-border);border-radius:var(--radius);background:var(--green-bg);">What is RAG? ↗</a>
+    <a href="https://docs.pinecone.io/guides/get-started/overview" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:var(--green-text);text-decoration:none;font-size:13.5px;font-weight:500;padding:6px 14px;border:.5px solid var(--green-border);border-radius:var(--radius);background:var(--green-bg);">Pinecone Docs ↗</a>
+    <a href="https://docs.ragas.io/en/stable/concepts/metrics/overview/" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:var(--green-text);text-decoration:none;font-size:13.5px;font-weight:500;padding:6px 14px;border:.5px solid var(--green-border);border-radius:var(--radius);background:var(--green-bg);">RAGAS Metrics ↗</a>
+    <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:var(--purple-text);text-decoration:none;font-size:13.5px;font-weight:500;padding:6px 14px;border:.5px solid var(--purple-border);border-radius:var(--radius);background:var(--purple-bg);">Memory Tool Docs ↗</a>
+    <a href="https://docs.langchain.com/oss/python/langgraph/memory" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:var(--purple-text);text-decoration:none;font-size:13.5px;font-weight:500;padding:6px 14px;border:.5px solid var(--purple-border);border-radius:var(--radius);background:var(--purple-bg);">LangGraph Memory ↗</a>
+  </div>
+
+  <div style="margin-top:2rem;padding:1.5rem;background:var(--surface);border:1.5px solid var(--accent-border);border-radius:12px;">
+    <h3 style="margin:0 0 8px;font-size:16px;">Submit Prelab 4</h3>
+    <p style="font-size:14px;color:var(--text-2);margin-bottom:1rem;">When you've completed all sections and written your reflections, submit to mark this prelab complete.</p>
+    <button class="btn btn-primary" id="final-submit-btn" onclick="submitPrelab()" style="padding:10px 28px;font-size:15px;">Submit Prelab 4 ✓</button>
+    <div id="submit-status" style="margin-top:12px;font-size:14px;display:none;"></div>
+  </div>
+
+  <div class="nav-buttons"><button class="btn" onclick="goTo(10)">← Back</button></div>
+</div>
+
+</main>
+</div>
+<script>
+// ── Section locking ───────────────────────────────────────────
+let sectionDone = new Set();
+let unlockedUpTo = 0;
+const reqState = {};
+
+function requirementsFor(n) {
+  if (n===0) return ['quiz'];
+  if (n===1) return ['quiz','read'];
+  if (n===2) return ['mcp-skill'];
+  if (n===3) return ['classify'];
+  if (n===4) return ['quiz','read'];
+  if (n===5) return ['order','read'];
+  if (n===6) return ['quiz','read'];
+  if (n===7) return ['quiz','read'];
+  if (n===8) return ['classify','read'];
+  if (n===9) return ['classify'];
+  if (n===10) return ['activities'];
+  if (n===11) return ['reflect'];
+  return [];
+}
+
+const readChecksNeeded = { 1:['rc1a'], 4:['rc4a'], 5:['rc5a'], 6:['rc6a'], 7:['rc7a'], 8:['rc8a'] };
+const readSectionOf = {};
+Object.entries(readChecksNeeded).forEach(([sec,ids]) => ids.forEach(id => readSectionOf[id] = parseInt(sec)));
+
+function markSectionRequirement(n, kind) {
+  reqState[n+'-'+kind] = true;
+  if (requirementsFor(n).every(k => reqState[n+'-'+k])) markDone(n);
+}
+
+function markDone(n) {
+  if (sectionDone.has(n)) return;
+  sectionDone.add(n);
+  const navDot = document.querySelector('.nav-item[data-section="'+n+'"]');
+  if (navDot) navDot.classList.add('done');
+  const nextBtn = document.getElementById('next-'+n);
+  if (nextBtn) nextBtn.removeAttribute('disabled');
+  while (sectionDone.has(unlockedUpTo)) unlockedUpTo++;
+  if (typeof saveProgress === 'function') saveProgress(n);
+}
+
+// ── Navigation ────────────────────────────────────────────────
+function goTo(n) {
+  if (n > unlockedUpTo) {
+    const item = document.querySelector('.nav-item[data-section="'+n+'"]');
+    if (item) { item.classList.add('shake'); setTimeout(() => item.classList.remove('shake'), 350); }
+    return;
+  }
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.remove('active');
+    if (parseInt(el.dataset.section) === n) el.classList.add('active');
+  });
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('.nav-item').forEach(el => el.addEventListener('click', () => goTo(parseInt(el.dataset.section))));
+document.querySelectorAll('.nav-buttons .btn-primary[id^="next-"]').forEach(b => b.setAttribute('disabled','true'));
+
+// ── Read checks ───────────────────────────────────────────────
+const openedLinks = new Set();
+function markOpened(id) { openedLinks.add(id); }
+function toggleRead(id) {
+  const el = document.getElementById(id);
+  if (!el.classList.contains('checked') && !openedLinks.has(id)) {
+    el.classList.add('shake'); setTimeout(() => el.classList.remove('shake'), 350); return;
+  }
+  el.classList.toggle('checked');
+  document.getElementById(id+'-box').textContent = '✓';
+  const sec = readSectionOf[id];
+  if (sec === undefined) return;
+  if (readChecksNeeded[sec].every(rid => document.getElementById(rid).classList.contains('checked'))) markSectionRequirement(sec, 'read');
+}
+
+// ── Patterns accordion ────────────────────────────────────────
+function togglePattern(id) { document.getElementById(id).classList.toggle('open'); }
+
+// ── Classify dropdowns ────────────────────────────────────────
+function checkClassify(sel) {
+  sel.classList.remove('correct','wrong');
+  if (!sel.value) return;
+  sel.classList.add(sel.value === sel.dataset.answer ? 'correct' : 'wrong');
+  // Check if all in same container are correct
+  const container = sel.closest('[id$="-classify"], [id="mcp-classify"], [id="mem-classify"], [id="watchout-classify"]');
+  if (!container) return;
+  const all = container.querySelectorAll('.classify-select');
+  if ([...all].every(s => s.value === s.dataset.answer)) {
+    const resultId = container.id.replace('-classify','') + '-classify-result';
+    const res = document.getElementById(resultId);
+    if (res) res.style.display = 'block';
+    const sec = { 'mcp-classify':3, 'mem-classify':8, 'watchout-classify':9 }[container.id];
+    if (sec !== undefined) markSectionRequirement(sec, 'classify');
+  }
+}
+
+// ── Quizzes ───────────────────────────────────────────────────
+const quizzes = {
+  q0: { q:"Which technique would you use to let your agent read from a company's internal Confluence wiki?", opts:["RAG — retrieve relevant wiki pages at inference time","MCP — connect the agent to the Confluence MCP server","Memory — store the wiki in long-term memory","None — put the wiki in the system prompt"], ans:0, exp:"RAG retrieves relevant chunks from a document store at inference time — ideal for large knowledge bases like a wiki. MCP could also work if Confluence exposes an MCP server, but RAG is the more natural fit for document retrieval." },
+  q1: { q:"A teammate says 'I'll build a Tool that returns the full database schema.' Should this be a Tool or a Resource?", opts:["Tool — it returns data so it must be a Tool","Resource — it's read-only, static data the server exposes","Prompt — it's a template the agent uses","Either — it doesn't matter"], ans:1, exp:"Resources are read-only, static data the server exposes — like a schema. Tools are for actions with side effects (writes, API calls that change state). The schema never changes based on input, making it a Resource." },
+  q4: { q:"Why is it better to retrieve 5 relevant chunks than to put the full document in the prompt?", opts:["The model can't read long documents","Retrieval is always faster than using context","Irrelevant context degrades output quality and wastes tokens","The model ignores context beyond 1,000 tokens"], ans:2, exp:"Irrelevant context actively hurts performance — the model has to 'look past' noise to find the answer, and it often fails. Retrieval surfaces only what's relevant, keeping the context clean and the model focused." },
+  q6: { q:"Your RAG system retrieves 10 chunks but only 2 are relevant to the query. What does this indicate?", opts:["High recall, high precision — working well","Low recall — you're missing relevant chunks","High recall, low precision — too much noise retrieved","Low recall, low precision — embedding problem"], ans:2, exp:"You're retrieving (high recall — the answer might be in there) but most chunks are irrelevant (low precision — lots of noise). Fix: reduce k or improve chunking so retrieved chunks are more tightly scoped to the query." },
+  q7: { q:"A user's preference for short emails is stored in long-term memory. Three months later they start writing longer emails. What risk does this create?", opts:["Memory bloat — too many entries","Skill drift — the email skill keeps writing short emails against current preference","MCP trust issue — the memory server is outdated","Context bloat — the memory floods the prompt"], ans:1, exp:"Skill drift — the agent's behavior has drifted from what the user actually wants now, because it's following stale memory. Mitigations: timestamp memory entries, allow users to explicitly update preferences, or periodically re-confirm key preferences." }
+};
+
+function buildQuiz(id) {
+  const el = document.getElementById(id); if (!el) return;
+  const d = quizzes[id]; if (!d) return;
+  let h = `<div style="margin-bottom:10px;font-size:14px;font-weight:500;color:var(--text);">${d.q}</div>`;
+  d.opts.forEach((o,i) => { h += `<div class="quiz-option" id="${id}-opt${i}" onclick="answerQuiz('${id}',${i})"><div class="letter">${'ABCD'[i]}</div>${o}</div>`; });
+  h += `<div class="quiz-feedback" id="${id}-fb"></div>`;
+  el.innerHTML = h;
+}
+function answerQuiz(id, chosen) {
+  const d = quizzes[id], fb = document.getElementById(id+'-fb');
+  d.opts.forEach((_,i) => { const el = document.getElementById(id+'-opt'+i); el.classList.remove('correct','wrong'); if(i===d.ans) el.classList.add('correct'); else if(i===chosen&&chosen!==d.ans) el.classList.add('wrong'); });
+  fb.className = 'quiz-feedback show '+(chosen===d.ans?'correct':'wrong');
+  fb.textContent = (chosen===d.ans?'✓ Correct! ':'✗ Not quite. ')+d.exp;
+  if (chosen === d.ans) markSectionRequirement(parseInt(id.slice(1)), 'quiz');
+}
+['q0','q1','q4','q6','q7'].forEach(buildQuiz);
+
+// ── RAG pipeline order ────────────────────────────────────────
+let ragDragged = null;
+document.querySelectorAll('.sort-item').forEach(item => {
+  item.addEventListener('dragstart', () => { ragDragged = item; });
+  item.addEventListener('dragend', () => { ragDragged = null; document.querySelectorAll('.sort-item').forEach(i => i.classList.remove('over')); });
+  item.addEventListener('dragover', e => { e.preventDefault(); item.classList.add('over'); });
+  item.addEventListener('dragleave', () => item.classList.remove('over'));
+  item.addEventListener('drop', e => {
+    e.preventDefault();
+    if (ragDragged && ragDragged !== item) {
+      const list = item.parentNode, all = [...list.children];
+      const di = all.indexOf(ragDragged), ti = all.indexOf(item);
+      if (di < ti) list.insertBefore(ragDragged, item.nextSibling); else list.insertBefore(ragDragged, item);
+    }
+    item.classList.remove('over');
+  });
+});
+
+function checkRAGOrder() {
+  const orders = [...document.querySelectorAll('#rag-sort .sort-item')].map(i => parseInt(i.dataset.order));
+  const res = document.getElementById('rag-order-result');
+  res.style.display = 'block';
+  const ok = JSON.stringify(orders) === JSON.stringify([1,2,3,4,5,6]);
+  res.style.color = ok ? 'var(--success)' : 'var(--danger)';
+  res.textContent = ok ? '✓ Correct! Chunk → Embed → Index → Retrieve → Augment → Generate.' : '✗ Not quite. The first three steps happen offline (building the index). The last three happen at inference time.';
+  if (ok) markSectionRequirement(5, 'order');
+}
+
+// ── MCP skill check ───────────────────────────────────────────
+function checkMCPSkill() {
+  const val = document.getElementById('mcp-skill-input').value.trim();
+  const res = document.getElementById('mcp-skill-result');
+  let issues = [];
+  if (!val || val.length < 60) issues.push('too short — be more explicit');
+  if (!val.match(/DocsServer:search/i)) issues.push('must reference DocsServer:search by full name');
+  if (!val.match(/query|parameter/i)) issues.push('must specify what to pass to the tool');
+  if (!val.match(/return|returns|result|bullet|summar/i)) issues.push('must describe what to do with the results');
+  res.style.color = issues.length === 0 ? 'var(--success)' : 'var(--danger)';
+  res.textContent = issues.length === 0 ? '✓ Looks good!' : 'Fix: ' + issues.join('; ') + '.';
+  if (issues.length === 0) markSectionRequirement(2, 'mcp-skill');
+}
+
+// ── Written activities: section is done once every answer is filled in ──
+function watchAnswers(sectionN, kind) {
+  const boxes = [...document.querySelectorAll('#s'+sectionN+' textarea')];
+  const check = () => { if (boxes.every(t => t.value.trim().length >= 20)) markSectionRequirement(sectionN, kind); };
+  boxes.forEach(t => t.addEventListener('input', check));
+}
+watchAnswers(10, 'activities');
+watchAnswers(11, 'reflect');
+
+// ── MCP server preview ────────────────────────────────────────
+function updateMCPPreview() {
+  const name = document.getElementById('mcp-server-name').value || 'StudyServer';
+  const purpose = document.getElementById('mcp-server-purpose').value || 'Purpose here';
+  const t1 = document.getElementById('mcp-tool1').value || 'tool_one(params) — description';
+  const t2 = document.getElementById('mcp-tool2').value || 'tool_two(params) — description';
+  const r1 = document.getElementById('mcp-res1').value || 'resource_one — description';
+  const r2 = document.getElementById('mcp-res2').value || 'resource_two — description';
+  const p1 = document.getElementById('mcp-prompt1').value || 'prompt_one — description';
+  document.getElementById('mcp-preview').innerHTML =
+    `<span class="c"># MCP Server: ${name}</span>\n<span class="c"># ${purpose}</span>\n\n` +
+    `<span class="y">TOOLS</span> (actions with side effects)\n` +
+    `  <span class="v">${t1}</span>\n  <span class="v">${t2}</span>\n\n` +
+    `<span class="y">RESOURCES</span> (read-only data)\n` +
+    `  <span class="v">${r1}</span>\n  <span class="v">${r2}</span>\n\n` +
+    `<span class="y">PROMPTS</span> (reusable templates)\n` +
+    `  <span class="v">${p1}</span>`;
+}
+updateMCPPreview();
+
+// ─── Page config ─────────────────────────────────────────────────────────────
+const PRELAB_ID = 'prelab-4'
+const PRELAB_LABEL = 'Prelab 4'
+const MAX_SECTION = 11
+const DASHBOARD_MILESTONES = {
+  3:  'section-1-mcp',
+  6:  'section-2-rag',
+  9:  'section-3-memory',
+  11: 'activities-complete',
+}
+
+// Boot
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/client.js"></script>
+<script src="../js/prelab.js"></script>
+<script>
+injectTopNav()
+initAuth()
+</script>
+</body>
+</html>
