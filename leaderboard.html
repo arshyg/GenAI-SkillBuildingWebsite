@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GenAI SkillBuilding: Leaderboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4fa; color: #1a1a1a; min-height: 100vh; }
+
+    nav { background: white; border-bottom: 1px solid #e0e8f5; padding: 0 32px; height: 56px; display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { font-size: 17px; font-weight: 600; color: #1a1a1a; text-decoration: none; }
+    .nav-logo span { color: #f5c100; }
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .nav-email { font-size: 13px; color: #888; }
+    .nav-link { font-size: 13px; color: #1a55a8; text-decoration: none; font-weight: 500; }
+    button.logout { padding: 6px 14px; background: transparent; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 13px; color: #666; cursor: pointer; transition: all 0.15s; }
+    button.logout:hover { border-color: #1a55a8; color: #1a55a8; }
+    .accent-bar { height: 3px; background: linear-gradient(90deg, #1a55a8, #f5c100); }
+
+    .container { max-width: 860px; margin: 40px auto; padding: 0 24px; }
+
+    /* Game board */
+    .board { background: radial-gradient(ellipse at top, #1d3f7a 0%, #0d1f3f 70%); border-radius: 20px; padding: 32px 28px 28px; color: white; box-shadow: 0 12px 40px rgba(13,31,63,0.35); border: 3px solid #f5c100; position: relative; overflow: hidden; }
+    .board::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px); background-size: 18px 18px; pointer-events: none; }
+    .board-head { text-align: center; margin-bottom: 28px; position: relative; }
+    .board-title { font-size: 30px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #f5c100; text-shadow: 0 2px 0 #b8860b, 0 0 20px rgba(245,193,0,0.35); }
+    .board-sub { font-size: 13px; color: #a9bde0; margin-top: 6px; }
+    .updated-chip { display: inline-block; margin-top: 12px; padding: 5px 14px; border-radius: 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); font-size: 12px; color: #dfe8f7; }
+    .updated-chip .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #4cd964; margin-right: 6px; box-shadow: 0 0 6px #4cd964; vertical-align: 1px; }
+
+    /* Podium */
+    .podium { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: end; gap: 12px; margin-bottom: 28px; position: relative; }
+    .podium-spot { text-align: center; }
+    .podium-medal { font-size: 34px; line-height: 1; margin-bottom: 6px; }
+    .podium-team { font-size: 14px; font-weight: 700; margin-bottom: 2px; overflow-wrap: anywhere; }
+    .podium-score { font-size: 13px; color: #f5c100; font-weight: 700; margin-bottom: 8px; font-variant-numeric: tabular-nums; }
+    .podium-block { border-radius: 10px 10px 0 0; display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; font-size: 26px; font-weight: 800; color: rgba(13,31,63,0.55); }
+    .podium-spot.p1 .podium-block { height: 120px; background: linear-gradient(180deg, #ffd84d, #f5c100); }
+    .podium-spot.p2 .podium-block { height: 88px; background: linear-gradient(180deg, #e6ecf5, #b9c6d8); }
+    .podium-spot.p3 .podium-block { height: 64px; background: linear-gradient(180deg, #e8b48a, #c98b5a); }
+    .podium-spot.empty { visibility: hidden; }
+
+    /* Rows */
+    .rows { display: flex; flex-direction: column; gap: 8px; position: relative; }
+    .team-row { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 14px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 12px 16px; animation: slideIn 0.4s ease both; }
+    .team-row.top { border-color: rgba(245,193,0,0.5); background: rgba(245,193,0,0.1); }
+    .rank { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; background: rgba(255,255,255,0.12); }
+    .team-row.top .rank { background: #f5c100; color: #0d1f3f; }
+    .team-name { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+    .score-track { height: 6px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-top: 7px; overflow: hidden; }
+    .score-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #4f8ef7, #f5c100); }
+    .score { font-size: 22px; font-weight: 800; color: #f5c100; font-variant-numeric: tabular-nums; text-align: right; }
+    .score-of { font-size: 13px; font-weight: 600; color: #a9bde0; margin-left: 2px; }
+    .stale { font-size: 11px; color: #a9bde0; margin-top: 5px; }
+    .score small { display: block; font-size: 10px; font-weight: 600; color: #a9bde0; letter-spacing: 0.08em; text-transform: uppercase; }
+
+    .empty-state { text-align: center; padding: 40px 10px; color: #a9bde0; font-size: 14px; position: relative; }
+
+    @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+    @media (max-width: 600px) {
+      nav { padding: 0 16px; }
+      .nav-email { display: none; }
+      .container { padding: 0 12px; margin: 24px auto; }
+      .board { padding: 24px 14px 18px; }
+      .board-title { font-size: 22px; }
+      .podium-medal { font-size: 26px; }
+      .podium-team { font-size: 12px; }
+      .team-row { grid-template-columns: 32px 1fr auto; gap: 10px; padding: 10px 12px; }
+      .rank { width: 30px; height: 30px; font-size: 13px; }
+      .score { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="dashboard.html">GenAI <span>SkillBuilding</span></a>
+  <div class="nav-right">
+    <a class="nav-link" href="dashboard.html">← Dashboard</a>
+    <span class="nav-email" id="user-email"></span>
+    <button class="logout" onclick="logout()">Log out</button>
+  </div>
+</nav>
+<div class="accent-bar"></div>
+
+<div class="container">
+  <div class="board">
+    <div class="board-head">
+      <div class="board-title">🏆 Leaderboard</div>
+      <div class="board-sub">Challenge scores by team</div>
+      <div class="updated-chip" id="updated" style="display:none"><span class="dot"></span><span id="updated-text"></span></div>
+    </div>
+    <div class="podium" id="podium"></div>
+    <div class="rows" id="rows"><div class="empty-state">Loading scores…</div></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/client.js"></script>
+<script>
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+  }
+
+  async function init() {
+    const { data: { session } } = await db.auth.getSession()
+    if (!session) { window.location.href = 'index.html'; return }
+    document.getElementById('user-email').textContent = session.user.email
+    await loadLeaderboard()
+  }
+
+  async function loadLeaderboard() {
+    const rowsEl = document.getElementById('rows')
+    const { data, error } = await db.from('leaderboard')
+      .select('team_name, score, raw_total, raw_possible, updated_on')
+      .order('score', { ascending: false })
+
+    if (error) {
+      console.error('Leaderboard load error:', error)
+      rowsEl.innerHTML = '<div class="empty-state">Couldn\'t load scores right now — try refreshing.</div>'
+      return
+    }
+    if (!data || data.length === 0) {
+      rowsEl.innerHTML = '<div class="empty-state">No scores yet — check back after the first challenge run.</div>'
+      return
+    }
+
+    // Ties share a rank (e.g. 1, 2, 2, 4)
+    let rank = 0
+    const ranked = data.map((r, i) => {
+      if (i === 0 || r.score !== data[i - 1].score) rank = i + 1
+      return { ...r, rank }
+    })
+
+    // Last updated = most recent run date across all teams.
+    // updated_on is a plain 'YYYY-MM-DD' date, so build it in local time (new Date('YYYY-MM-DD') would be UTC and can show the day before).
+    const toLocalDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d) }
+    const latestStr = data.map(r => r.updated_on).sort().pop()
+    const fmt = (s, opts) => toLocalDate(s).toLocaleDateString(undefined, opts)
+    document.getElementById('updated-text').textContent = 'Updated ' + fmt(latestStr, { weekday: 'long', month: 'short', day: 'numeric' })
+    document.getElementById('updated').style.display = 'inline-block'
+
+    // Podium: 2nd, 1st, 3rd
+    const medals = ['🥇', '🥈', '🥉']
+    document.getElementById('podium').innerHTML = [1, 0, 2].map(i => {
+      const t = ranked[i]
+      if (!t) return '<div class="podium-spot empty"></div>'
+      return `<div class="podium-spot p${i + 1}">
+        <div class="podium-medal">${medals[i]}</div>
+        <div class="podium-team">${esc(t.team_name)}</div>
+        <div class="podium-score">${esc(t.raw_total)} / ${esc(t.raw_possible)} pts</div>
+        <div class="podium-block">${t.rank}</div>
+      </div>`
+    }).join('')
+
+    rowsEl.innerHTML = ranked.map((t, i) => `
+      <div class="team-row ${t.rank <= 3 ? 'top' : ''}" style="animation-delay:${i * 0.05}s">
+        <div class="rank">${t.rank}</div>
+        <div>
+          <div class="team-name">${esc(t.team_name)}</div>
+          <div class="score-track"><div class="score-fill" style="width:${Math.min(100, Math.max(0, Number(t.score) * 100))}%"></div></div>
+          ${t.updated_on !== latestStr ? `<div class="stale">Last scored ${esc(fmt(t.updated_on, { month: 'short', day: 'numeric' }))}</div>` : ''}
+        </div>
+        <div class="score">${esc(t.raw_total)}<span class="score-of">/${esc(t.raw_possible)}</span><small>${Math.round(Number(t.score) * 100)}%</small></div>
+      </div>`).join('')
+  }
+
+  async function logout() {
+    await db.auth.signOut()
+    window.location.href = 'index.html'
+  }
+
+  init()
+</script>
+</body>
+</html>

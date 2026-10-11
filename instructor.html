@@ -133,6 +133,7 @@
           <th>Quiz 2</th>
           <th>Prelab 3</th>
           <th>Quiz 3</th>
+          <th>Prelab 4</th>
           <th>Last active</th>
         </tr>
       </thead>
@@ -151,12 +152,13 @@
 
 
   // Progress is saved as 'section-N' for each completed section
-  // Prelab 1 has sections 0-13, prelab 2 has 0-11, prelab 3 has 0-9
+  // Prelab 1 has sections 0-13, prelab 2 has 0-11, prelab 3 has 0-9, prelab 4 has 0-11
   // We calculate % as: sections completed / total sections
   const PRELAB_TOTALS = {
     'prelab-1': 14,
     'prelab-2': 12,
     'prelab-3': 10,
+    'prelab-4': 12,
   }
 
   let allStudents = []
@@ -309,6 +311,7 @@
         <td>${quizScoreHtml(s.quiz, 'prelab-2-quiz')}</td>
         <td>${prelabPctHtml(s.prelabPct['prelab-3'])}</td>
         <td>${quizScoreHtml(s.quiz, 'prelab-3-quiz')}</td>
+        <td>${prelabPctHtml(s.prelabPct['prelab-4'])}</td>
         <td>${formatDate(s.lastActive)}</td>
       </tr>
     `).join('')
