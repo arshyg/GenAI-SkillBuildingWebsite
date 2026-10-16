@@ -59,7 +59,6 @@
   .callout-tip{background:var(--purple-bg);border-color:var(--purple);color:var(--purple-text);}
   .callout-warn{background:var(--amber-bg);border-color:var(--amber);color:var(--amber-text);}
   .callout-danger{background:var(--coral-bg);border-color:var(--coral);color:var(--coral-text);}
-  .callout-colab{background:#fff8e6;border-color:#f0b429;color:#7a4f00;border-left:3px solid #f0b429;}
   .callout strong{font-weight:500;display:block;margin-bottom:2px;}
   code{font-family:var(--mono);font-size:12.5px;background:var(--surface-2);padding:1px 5px;border-radius:4px;color:var(--text);}
   pre{background:#1e1e1e;color:#d4d4d4;border-radius:8px;padding:1rem 1.25rem;font-family:var(--mono);font-size:12px;line-height:1.65;overflow-x:auto;margin:1rem 0;}
@@ -170,11 +169,6 @@
   .mcp-components{display:flex;gap:8px;flex-wrap:wrap;margin:.75rem 0;}
   .mcp-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;font-size:13px;font-weight:500;border:.5px solid;}
 
-  /* Colab callout */
-  .colab-callout{background:#fff8e6;border:.5px solid var(--amber-border);border-radius:10px;padding:1rem 1.25rem;margin:1rem 0;display:flex;align-items:center;gap:14px;}
-  .colab-callout .icon{font-size:22px;flex-shrink:0;}
-  .colab-callout .label{font-weight:500;font-size:14px;color:#7a4f00;}
-  .colab-callout .sub{font-size:13px;color:#7a4f00;margin-top:2px;opacity:.85;}
 
   /* Skill field */
   .skill-field{margin-bottom:1rem;}
@@ -264,11 +258,6 @@
         <tr style="border-top:.5px solid var(--border);"><td style="padding:10px 16px;font-weight:500;color:var(--purple-text);">Memory</td><td style="padding:10px 16px;color:var(--text-2);">"My agent forgets who the user is"</td><td style="padding:10px 16px;color:var(--text-2);">Across turns and across sessions</td></tr>
       </tbody>
     </table>
-  </div>
-
-  <div class="callout callout-colab">
-    <strong>Companion Colab</strong>
-    Read through each concept here first, complete the written activities, then open the Colab to build and run real implementations of MCP, RAG, and memory patterns.
   </div>
 
   <h2>Quick check — what problem does each solve?</h2>
@@ -453,9 +442,7 @@ You are a weather assistant. When given a city name:
 <div class="section" id="s3">
   <div class="section-tag tag-blue">MCP · 3 of 3</div>
   <h1>Activity: Design an MCP server</h1>
-  <p class="subtitle">Design a small MCP server before building it in the Colab. Getting the interface right on paper first saves a lot of iteration in code.</p>
-
-  <div class="colab-callout"><div class="icon">💻</div><div><div class="label">Complete Activities 1 & 2 in the Colab</div><div class="sub">Activity 1: Build this server with FastMCP. Activity 2: Connect it to a skill and call a tool.</div></div></div>
+  <p class="subtitle">Design a small MCP server on paper. Getting the interface right before writing code saves a lot of iteration.</p>
 
   <h2>Design your MCP server</h2>
   <p style="font-size:14px;color:var(--text-2);">You're building an MCP server for a <strong>university study platform</strong>. Fill in the design below. Think carefully about which capabilities are tools (side effects) vs resources (read-only) vs prompts (templates).</p>
@@ -900,9 +887,7 @@ Always use the sign-off and tone from memory.</pre>
 <div class="section" id="s10">
   <div class="section-tag tag-green">Activities</div>
   <h1>Activity: RAG pipeline design</h1>
-  <p class="subtitle">Design a RAG system for a specific use case before implementing it in the Colab.</p>
-
-  <div class="colab-callout"><div class="icon">💻</div><div><div class="label">Complete Activity 3 in the Colab</div><div class="sub">Build and run the RAG pipeline you design here using Pinecone and Gemini.</div></div></div>
+  <p class="subtitle">Design a RAG system and memory patterns for a specific use case.</p>
 
   <h2>Scenario: University study assistant knowledge base</h2>
   <p style="font-size:14px;color:var(--text-2);">A university study assistant has access to 5,000 lecture notes, textbook chapters, and past exam papers across all departments. Students ask questions like "explain the central limit theorem" or "what were the key causes of World War 1?". Design a RAG system to answer these accurately.</p>
@@ -951,7 +936,7 @@ Always use the sign-off and tone from memory.</pre>
 <div class="section" id="s11">
   <div class="section-tag tag-amber">Wrap-up</div>
   <h1>Reflection</h1>
-  <p class="subtitle">Answer the questions below and submit screenshots in the Google Form.</p>
+  <p class="subtitle">Answer the questions below, then submit at the bottom of the page.</p>
 
   <div class="card" style="margin-bottom:1rem;">
     <div style="font-size:12px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Question 1</div>

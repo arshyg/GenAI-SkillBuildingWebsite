@@ -244,6 +244,34 @@
   .stat-card .stat-label { font-size: 11.5px; color: var(--text-3); margin-bottom: 4px; }
   .stat-card .stat-value { font-size: 26px; font-weight: 600; color: var(--accent-text); }
   .stat-card.k .stat-value { color: var(--coral); }
+  .passk-chart { margin-top: 1.1rem; border-top: 0.5px solid var(--border); padding-top: 0.9rem; }
+  .passk-chart svg { width: 100%; height: auto; display: block; }
+  .passk-legend { display: flex; gap: 16px; font-size: 12px; color: var(--text-2); margin-bottom: 6px; flex-wrap: wrap; }
+  .passk-legend span::before { content: ''; display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; background: currentColor; }
+  .passk-legend .at { color: var(--accent); }
+  .passk-legend .hat { color: var(--coral); }
+  .passk-legend .p { color: var(--text-3); }
+  .outcome-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 0.5rem; }
+  .outcome-table th { text-align: left; font-weight: 500; font-size: 11.5px; color: var(--text-3); padding: 6px 8px; border-bottom: 0.5px solid var(--border-strong); }
+  .outcome-table td { padding: 6px 8px; border-bottom: 0.5px solid var(--border); font-family: var(--mono); font-size: 12.5px; }
+  .outcome-table .trial { display: inline-block; width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 5px; margin-right: 3px; font-size: 12px; font-weight: 600; }
+  .outcome-table .t-pass { background: var(--success-bg); color: var(--success); }
+  .outcome-table .t-fail { background: var(--danger-bg); color: var(--danger); }
+  .outcome-table .yes { color: var(--success); font-weight: 600; }
+  .outcome-table .no { color: var(--text-3); }
+  .outcome-table tr.only-at td { background: var(--accent-bg); }
+  .outcome-table tr.all-pass td { background: var(--success-bg); }
+  .outcome-table tr.all-fail td { background: var(--danger-bg); }
+  .formula-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 1rem 0; }
+  .formula { border: 0.5px solid var(--border-strong); border-radius: 10px; padding: 0.8rem 1rem; background: var(--surface); font-size: 13px; color: var(--text-2); }
+  .formula code { display: block; font-family: var(--mono); font-size: 15px; color: var(--text); margin: 4px 0 6px; }
+  .scenario-row { border: 0.5px solid var(--border-strong); border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 10px; background: var(--surface); }
+  .scenario-text { font-size: 13.5px; color: var(--text); margin-bottom: 8px; line-height: 1.5; }
+  .scenario-row .match-select { width: 100%; }
+  .match-why { display: none; font-size: 12.5px; margin-top: 8px; padding: 8px 10px; border-radius: 8px; line-height: 1.5; }
+  .match-why.ok { background: var(--success-bg); color: var(--success); }
+  .match-why.hint { background: var(--danger-bg); color: var(--danger); }
+  @media (max-width: 640px) { .formula-row { grid-template-columns: 1fr; } }
   .reveal-card { cursor: pointer; }
   .reveal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 1rem 0; }
   @media (max-width: 700px) { .reveal-grid { grid-template-columns: 1fr; } }
@@ -471,6 +499,28 @@
     <div class="card-sm"><h4>pass^k</h4><p><strong>Every</strong> one of k tries succeeds. Falls toward 0% as k grows. Use when the skill must be reliable every single time.</p></div>
   </div>
 
+  <h3>How they relate</h3>
+  <p>Both numbers come from the <strong>same</strong> per-trial success rate <em>p</em>. They just ask different questions about the same k runs. Say a skill passes 75% of the time (p = 0.75) and you run it k = 3 times. There are 8 possible outcomes:</p>
+  <div class="card" style="padding:0.5rem 0.75rem; overflow-x:auto;">
+    <table class="outcome-table">
+      <thead><tr><th>Run 1 · 2 · 3</th><th>Probability</th><th>Counts for pass@3?</th><th>Counts for pass^3?</th></tr></thead>
+      <tbody id="outcome-body"></tbody>
+    </table>
+  </div>
+  <p style="font-size:13px; color:var(--text-3); margin-top:6px;">Green row = the only outcome pass^3 accepts. Red row = the only outcome pass@3 rejects. Purple rows = pass@3 accepts them but pass^3 doesn't, and that's the gap between the two numbers.</p>
+
+  <div class="formula-row">
+    <div class="formula"><strong>pass^k</strong> = all k runs pass<code>p<sup>k</sup></code>0.75 × 0.75 × 0.75 = <strong>42.2%</strong></div>
+    <div class="formula"><strong>pass@k</strong> = not every run failed<code>1 − (1 − p)<sup>k</sup></code>1 − (0.25 × 0.25 × 0.25) = <strong>98.4%</strong></div>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Three things to notice</strong>
+    1. At <b>k = 1</b> they're identical. Both equal p, because one run either passed or didn't.<br>
+    2. As k grows they <b>split apart</b>. pass@k climbs toward 100% (more chances for one success), while pass^k drops toward 0% (more chances for one failure).<br>
+    3. pass^k is always <b>≤ p ≤</b> pass@k. The same skill can look great or shaky depending on which one you report, so always say which one you mean.
+  </div>
+
   <h3>Try it — drag the sliders</h3>
   <div class="card">
     <div class="slider-row">
@@ -484,6 +534,11 @@
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-label">pass@k — at least one success</div><div class="stat-value" id="passatk">95.3%</div></div>
       <div class="stat-card k"><div class="stat-label">pass^k — all k succeed</div><div class="stat-value" id="passhatk">42.2%</div></div>
+    </div>
+    <div class="passk-chart">
+      <div class="passk-legend"><span class="at">pass@k</span><span class="hat">pass^k</span><span class="p">p (single run)</span></div>
+      <svg id="passk-svg" viewBox="0 0 560 230" role="img" aria-label="pass@k and pass^k plotted against k"></svg>
+      <p style="font-size:12.5px; color:var(--text-3); margin-top:6px;">Both lines start at the same point (k = 1) and fan out. Move p and watch how fast the coral line falls, even for a skill that's right most of the time.</p>
     </div>
   </div>
 
@@ -540,46 +595,53 @@
     Agents often find valid paths you didn't anticipate. Checking whether the right thing happened is usually more robust than checking whether it happened in the exact sequence you expected.
   </div>
 
-  <h2>Sort each method into its grader type</h2>
+  <h2>Pick the best grader for each situation</h2>
+  <p style="font-size:14px;">Each scenario has a best fit, and a couple include a trap. Think about <strong>cost, scale, and what's actually being checked</strong> before you pick. A wrong answer gets you a hint.</p>
   <div id="match-rows-2">
-    <div class="match-row">
-      <div class="match-term">Regex / exact string match</div>
-      <select class="match-select" data-answer="code" onchange="checkMatch(this,'match-result-2')">
-        <option value="">— choose —</option><option value="code">Code-based</option><option value="model">Model-based</option><option value="human">Human</option>
+    <div class="scenario-row">
+      <div class="scenario-text">A skill turns meeting notes into JSON for your calendar app. You need to check, on all 300 test cases, that the output parses and has <code>title</code>, <code>start</code>, and <code>attendees</code> fields.</div>
+      <select class="match-select" data-answer="code" data-why="Whether the output parses and has the right fields is a yes/no fact. A JSON parser plus a field check is free, instant, and never wrong. Paying a model to judge this would only add a new way for grading to go wrong." data-hint="Is there anything to judge here, or can a short script answer it for sure?" onchange="checkMatch(this,'match-result-2')">
+        <option value="">— choose a grader —</option><option value="code">Code-based</option><option value="model">Model-based</option><option value="human">Human</option>
       </select>
+      <div class="match-why"></div>
     </div>
-    <div class="match-row">
-      <div class="match-term">Rubric-based scoring by a model</div>
-      <select class="match-select" data-answer="model" onchange="checkMatch(this,'match-result-2')">
-        <option value="">— choose —</option><option value="code">Code-based</option><option value="model">Model-based</option><option value="human">Human</option>
+    <div class="scenario-row">
+      <div class="scenario-text">A support-reply skill is re-run nightly on 500 tickets. You want to score each reply 1–5 on whether it acknowledges the customer's frustration before offering a fix.</div>
+      <select class="match-select" data-answer="model" data-why="“Acknowledges frustration” is open-ended, and the wording can vary a lot. 500 replies every night is too many for people to read. A model judge with a clear rubric is the right fit, as long as you check it against human scores now and then." data-hint="Think about the volume (500 a night) and whether a regex could ever catch all the ways to acknowledge frustration." onchange="checkMatch(this,'match-result-2')">
+        <option value="">— choose a grader —</option><option value="code">Code-based</option><option value="model">Model-based</option><option value="human">Human</option>
       </select>
+      <div class="match-why"></div>
     </div>
-    <div class="match-row">
-      <div class="match-term">Subject-matter-expert review</div>
-      <select class="match-select" data-answer="human" onchange="checkMatch(this,'match-result-2')">
-        <option value="">— choose —</option><option value="code">Code-based</option><option value="model">Model-based</option><option value="human">Human</option>
+    <div class="scenario-row">
+      <div class="scenario-text">Your model judge and your team disagree on about 30% of “helpfulness” scores. Before you change the judge's rubric, you need a trusted set of correct labels.</div>
+      <select class="match-select" data-answer="human" data-why="You can't calibrate a judge against itself. A small set labeled by experts (humans) becomes the reference that you tune the model judge's rubric against." data-hint="If the judge is the thing you don't trust yet, what can you check it against?" onchange="checkMatch(this,'match-result-2')">
+        <option value="">— choose a grader —</option><option value="code">Code-based</option><option value="model">Model-based</option><option value="human">Human</option>
       </select>
+      <div class="match-why"></div>
     </div>
-    <div class="match-row">
-      <div class="match-term">Pairwise comparison (model prefers A or B)</div>
-      <select class="match-select" data-answer="model" onchange="checkMatch(this,'match-result-2')">
-        <option value="">— choose —</option><option value="code">Code-based</option><option value="model">Model-based</option><option value="human">Human</option>
+    <div class="scenario-row">
+      <div class="scenario-text">A booking agent should reserve a flight. Sometimes it searches first, sometimes it uses a cached fare, sometimes it asks a clarifying question. You want to know if the booking actually happened.</div>
+      <select class="match-select" data-answer="code" data-why="Grade the outcome, not the steps. Check whether a matching booking record now exists in the database. That's deterministic and doesn't care which valid path the agent took." data-hint="Trap: the path varies, but does the end state? What could you check directly?" onchange="checkMatch(this,'match-result-2')">
+        <option value="">— choose a grader —</option><option value="code">Code-based</option><option value="model">Model-based</option><option value="human">Human</option>
       </select>
+      <div class="match-why"></div>
     </div>
-    <div class="match-row">
-      <div class="match-term">Unit tests (pass-to-pass / fail-to-pass)</div>
-      <select class="match-select" data-answer="code" onchange="checkMatch(this,'match-result-2')">
-        <option value="">— choose —</option><option value="code">Code-based</option><option value="model">Model-based</option><option value="human">Human</option>
+    <div class="scenario-row">
+      <div class="scenario-text">You rewrote a summarization skill and want to know if v2's summaries are more faithful to the source than v1's, across 200 articles.</div>
+      <select class="match-select" data-answer="model" data-why="Pairwise comparison (“which of A or B is more faithful?”) is a classic model-graded setup. Faithfulness can't be checked by string matching, and 200 side-by-side pairs is too many for people to review on every iteration." data-hint="Faithfulness is a judgment call, and there are 200 pairs. Which grader handles judgment at scale?" onchange="checkMatch(this,'match-result-2')">
+        <option value="">— choose a grader —</option><option value="code">Code-based</option><option value="model">Model-based</option><option value="human">Human</option>
       </select>
+      <div class="match-why"></div>
     </div>
-    <div class="match-row">
-      <div class="match-term">Crowdsourced judgment</div>
-      <select class="match-select" data-answer="human" onchange="checkMatch(this,'match-result-2')">
-        <option value="">— choose —</option><option value="code">Code-based</option><option value="model">Model-based</option><option value="human">Human</option>
+    <div class="scenario-row">
+      <div class="scenario-text">A medication-reminder skill is about to launch. Before release, you need someone to confirm that its dosage-timing advice is clinically safe.</div>
+      <select class="match-select" data-answer="human" data-why="When a wrong answer could hurt someone and correctness takes expert knowledge, a subject-matter expert (here, a clinician) has to sign off. Automated graders can help with screening, but they can't be the final check." data-hint="Ask: who is qualified to say “this is safe,” and what does a mistake cost?" onchange="checkMatch(this,'match-result-2')">
+        <option value="">— choose a grader —</option><option value="code">Code-based</option><option value="model">Model-based</option><option value="human">Human</option>
       </select>
+      <div class="match-why"></div>
     </div>
   </div>
-  <div id="match-result-2" style="display:none; margin-top:0.75rem;" class="callout callout-tip">All correct! You can tell the three kinds of grader apart.</div>
+  <div id="match-result-2" style="display:none; margin-top:0.75rem;" class="callout callout-tip">All correct! You picked graders based on what's being checked, not just on what they're called.</div>
 
   <h2>Reading</h2>
   <p class="section-hint" style="margin-top:-0.5rem; margin-bottom:0.75rem;">Open the link first, then check it off.</p>
@@ -790,12 +852,8 @@
     <div><div style="font-weight:500;font-size:14px;">dspy.GEPA — implementation docs</div><div style="font-size:12px; color:var(--text-3); margin-top:2px;">Where you'll actually run GEPA, capped at 2 rounds, in the lab</div></div>
     <a href="https://dspy.ai/api/optimizers/GEPA/overview/" target="_blank" style="margin-left:auto; font-size:12px; color:var(--accent-text); text-decoration:none; white-space:nowrap;" onclick="event.stopPropagation(); markOpened('rc5a')">Open ↗</a>
   </div>
-  <div class="callout callout-info" style="margin-top:10px;">
-    <strong>Instructor note</strong>
-    The docs above are the required reading. If you'd rather assign the primary source instead, swap the requirement for the paper below — don't assign both.
-  </div>
   <div class="card" style="margin-top:10px; opacity:0.85;">
-    <div style="font-weight:500;font-size:14px;">Optional (or substitute) — GEPA: Reflective Prompt Evolution (paper)</div>
+    <div style="font-weight:500;font-size:14px;">Optional — GEPA: Reflective Prompt Evolution (paper)</div>
     <div style="font-size:12px; color:var(--text-3); margin-top:2px; margin-bottom:8px;">Longer, primary-source read. Covers the Pareto-frontier mechanism and the GRPO/MIPROv2 comparisons in full.</div>
     <a href="https://arxiv.org/abs/2507.19457" target="_blank" style="font-size:12px; color:var(--accent-text); text-decoration:none;">Open ↗</a>
   </div>
@@ -1269,8 +1327,16 @@ function toggleRead(id) {
 function checkMatch(sel, resultId) {
   const correct = sel.dataset.answer;
   sel.classList.remove('correct','wrong');
+  const why = sel.parentElement.querySelector('.match-why');
+  if (why) why.style.display = 'none';
   if (sel.value === '') return;
   sel.classList.add(sel.value === correct ? 'correct' : 'wrong');
+  if (why) {
+    const ok = sel.value === correct;
+    why.className = 'match-why ' + (ok ? 'ok' : 'hint');
+    why.textContent = (ok ? '✓ ' : 'Hint: ') + (ok ? sel.dataset.why : sel.dataset.hint);
+    why.style.display = 'block';
+  }
   const container = sel.closest('div[id^="match-rows"]');
   const selects = container.querySelectorAll('.match-select');
   const allCorrect = [...selects].every(s => s.value === s.dataset.answer);
@@ -1298,7 +1364,56 @@ function updatePassK() {
   const hatK = Math.pow(p, k) * 100;
   document.getElementById('passatk').textContent = atK.toFixed(1) + '%';
   document.getElementById('passhatk').textContent = hatK.toFixed(1) + '%';
+  drawPassKChart(p, k);
 }
+
+function drawPassKChart(p, kSel) {
+  const svg = document.getElementById('passk-svg');
+  if (!svg) return;
+  const W = 560, H = 230, L = 40, R = 14, T = 12, B = 32, KMAX = 10;
+  const x = k => L + (k - 1) * (W - L - R) / (KMAX - 1);
+  const y = v => T + (1 - v) * (H - T - B);
+  let g = '';
+  [0, 0.25, 0.5, 0.75, 1].forEach(v => {
+    g += `<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" style="stroke:var(--border)"/>`;
+    g += `<text x="${L-6}" y="${y(v)+4}" text-anchor="end" style="fill:var(--text-3);font-size:11px">${v*100}%</text>`;
+  });
+  for (let k = 1; k <= KMAX; k++) g += `<text x="${x(k)}" y="${H-B+16}" text-anchor="middle" style="fill:var(--text-3);font-size:11px">${k}</text>`;
+  g += `<text x="${(L+W-R)/2}" y="${H-2}" text-anchor="middle" style="fill:var(--text-3);font-size:11px">k (number of trials)</text>`;
+  g += `<line x1="${x(kSel)}" x2="${x(kSel)}" y1="${T}" y2="${H-B}" style="stroke:var(--text-3);stroke-dasharray:3 3"/>`;
+  g += `<line x1="${L}" x2="${W-R}" y1="${y(p)}" y2="${y(p)}" style="stroke:var(--text-3);stroke-dasharray:6 4;stroke-width:1.5"/>`;
+  const line = (f, color) => {
+    let d = '', dots = '';
+    for (let k = 1; k <= KMAX; k++) {
+      d += (k === 1 ? 'M' : 'L') + x(k) + ' ' + y(f(k)) + ' ';
+      dots += `<circle cx="${x(k)}" cy="${y(f(k))}" r="${k === kSel ? 5 : 2.5}" style="fill:${color}"/>`;
+    }
+    return `<path d="${d}" style="fill:none;stroke:${color};stroke-width:2.5"/>` + dots;
+  };
+  g += line(k => 1 - Math.pow(1 - p, k), 'var(--accent)');
+  g += line(k => Math.pow(p, k), 'var(--coral)');
+  svg.innerHTML = g;
+}
+
+function buildOutcomeTable() {
+  const body = document.getElementById('outcome-body');
+  if (!body) return;
+  const p = 0.75;
+  let rows = '';
+  for (let m = 7; m >= 0; m--) {
+    const runs = [4, 2, 1].map(b => (m & b) ? 1 : 0);
+    const passes = runs.reduce((a, b) => a + b, 0);
+    const prob = runs.reduce((acc, r) => acc * (r ? p : 1 - p), 1);
+    const atOk = passes > 0, hatOk = passes === 3;
+    const cls = hatOk ? 'all-pass' : (!atOk ? 'all-fail' : 'only-at');
+    const boxes = runs.map(r => `<span class="trial ${r ? 't-pass' : 't-fail'}">${r ? '✓' : '✗'}</span>`).join('');
+    const expr = runs.map(r => r ? '0.75' : '0.25').join(' × ');
+    rows += `<tr class="${cls}"><td>${boxes}</td><td>${expr} = ${(prob*100).toFixed(1)}%</td>` +
+      `<td class="${atOk ? 'yes' : 'no'}">${atOk ? 'yes' : 'no'}</td><td class="${hatOk ? 'yes' : 'no'}">${hatOk ? 'yes' : 'no'}</td></tr>`;
+  }
+  body.innerHTML = rows;
+}
+buildOutcomeTable();
 updatePassK();
 
 function updateSuite() {
