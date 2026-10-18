@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prelab 3 Quiz — GenAI SkillBuilding</title>
+
+
+
+<style>
+  :root {
+    --bg: #f8f7f4; --surface: #ffffff; --surface-2: #f1efe8;
+    --border: rgba(0,0,0,0.1); --border-strong: rgba(0,0,0,0.18);
+    --text: #1a1a18; --text-2: #555550; --text-3: #888780;
+    --accent: #1a55a8; --accent-bg: #e8f0fe; --accent-border: #b8d0f5; --accent-text: #0c3d7a;
+    --success: #0f6e56; --success-bg: #e1f5ee; --success-border: #9fe1cb;
+    --danger: #993c1d; --danger-bg: #faece7;
+    --yellow: #f5c100; --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.7; min-height: 100vh; }
+
+  nav {
+    background: var(--surface); border-bottom: 0.5px solid var(--border-strong);
+    padding: 0 2rem; height: 52px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .nav-logo { font-size: 15px; font-weight: 600; text-decoration: none; color: var(--text); }
+  .nav-logo span { color: var(--yellow); }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .nav-email { font-size: 12px; color: var(--text-3); }
+  .btn-out { font-size: 12px; padding: 4px 10px; border: 0.5px solid var(--border-strong); border-radius: 6px; background: none; color: var(--text-3); cursor: pointer; }
+  .accent-bar { height: 3px; background: linear-gradient(90deg, var(--accent), var(--yellow)); }
+
+  .container { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+
+  .quiz-header { margin-bottom: 2rem; }
+  .quiz-tag { display: inline-block; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-text); background: var(--accent-bg); padding: 3px 10px; border-radius: 99px; border: 0.5px solid var(--accent-border); margin-bottom: 0.75rem; }
+  h1 { font-size: 24px; font-weight: 500; margin-bottom: 0.5rem; }
+  .quiz-meta { font-size: 14px; color: var(--text-2); }
+
+  .already-submitted {
+    background: var(--success-bg); border: 0.5px solid var(--success-border);
+    border-radius: 12px; padding: 1.5rem 2rem; margin-bottom: 2rem; display: none;
+  }
+  .already-submitted h3 { font-size: 16px; font-weight: 500; color: var(--success); margin-bottom: 6px; }
+  .already-submitted p { font-size: 14px; color: var(--success); margin: 0; }
+
+  .question-card {
+    background: var(--surface); border: 0.5px solid var(--border-strong);
+    border-radius: 12px; padding: 1.5rem; margin-bottom: 1.25rem;
+  }
+  .q-number { font-size: 11px; font-weight: 500; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+  .q-text { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 1rem; line-height: 1.5; }
+
+  .option {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 14px; border: 0.5px solid var(--border-strong);
+    border-radius: 8px; margin-bottom: 8px; cursor: pointer;
+    transition: 0.15s; font-size: 14px; color: var(--text-2);
+    background: var(--surface); user-select: none;
+  }
+  .option:hover { border-color: var(--accent-border); background: var(--accent-bg); }
+  .option.selected { border-color: var(--accent); background: var(--accent-bg); color: var(--accent-text); }
+  .option.correct { border-color: var(--success); background: var(--success-bg); color: var(--success); }
+  .option.wrong { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); }
+  .option.disabled { cursor: default; pointer-events: none; }
+  .opt-letter {
+    width: 22px; height: 22px; border-radius: 50%; background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; flex-shrink: 0; color: var(--text-3); margin-top: 1px;
+  }
+  .option.selected .opt-letter { background: var(--accent); color: white; }
+  .option.correct .opt-letter { background: var(--success); color: white; }
+  .option.wrong .opt-letter { background: var(--danger); color: white; }
+
+  .submit-row { margin-top: 2rem; display: flex; align-items: center; gap: 16px; }
+  .btn-submit {
+    padding: 11px 28px; background: var(--accent); color: white;
+    border: none; border-radius: 8px; font-size: 15px; font-weight: 500;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .btn-submit:hover { background: #13407f; }
+  .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+  .submit-note { font-size: 13px; color: var(--text-3); }
+
+  .results-card {
+    background: var(--surface); border: 2px solid var(--accent-border);
+    border-radius: 16px; padding: 2rem; margin-top: 2rem; display: none; text-align: center;
+  }
+  .results-card.show { display: block; }
+  .score-big { font-size: 52px; font-weight: 600; color: var(--accent); line-height: 1; margin-bottom: 8px; }
+  .score-label { font-size: 16px; color: var(--text-2); margin-bottom: 1.5rem; }
+  .score-bar-bg { height: 10px; background: var(--surface-2); border-radius: 99px; overflow: hidden; margin: 0 auto 1.5rem; max-width: 300px; }
+  .score-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--yellow)); border-radius: 99px; transition: width 0.8s ease; }
+  .results-note { font-size: 14px; color: var(--text-2); margin-bottom: 1.5rem; }
+  .btn-dashboard { display: inline-block; padding: 10px 24px; background: var(--accent); color: white; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="../dashboard.html">GenAI <span>SkillBuilding</span></a>
+  <div class="nav-right">
+    <span class="nav-email" id="user-email"></span>
+    <a href="../dashboard.html" style="font-size:12px;padding:4px 10px;border:0.5px solid var(--border-strong);border-radius:6px;color:var(--text-3);text-decoration:none;transition:0.15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-3)'">← Dashboard</a>
+    <button class="btn-out" onclick="doLogout()">Log out</button>
+  </div>
+</nav>
+<div class="accent-bar"></div>
+
+<div class="container">
+  <div class="quiz-header">
+    <div class="quiz-tag">Prelab 3 · Graded Quiz</div>
+    <h1>Evaluating &amp; Optimizing Skills</h1>
+    <p class="quiz-meta">10 questions · Based on the Prelab 3 reading · Submitted once</p>
+  </div>
+
+  <div class="already-submitted" id="already-submitted">
+    <h3>✓ Already submitted</h3>
+    <p id="prev-score-text"></p>
+  </div>
+
+  <div id="quiz-body">
+    <!-- Questions injected by JS -->
+  </div>
+
+  <div class="submit-row" id="submit-row">
+    <button class="btn-submit" id="submit-btn" onclick="submitQuiz()">Submit quiz</button>
+    <span class="submit-note">You can only submit once. Review your answers before submitting.</span>
+  </div>
+
+  <div class="results-card" id="results-card">
+    <div class="score-big" id="score-big"></div>
+    <div class="score-label" id="score-label"></div>
+    <div class="score-bar-bg"><div class="score-bar-fill" id="score-bar"></div></div>
+    <div class="results-note">Your answers are saved. Your instructor can see your score.</div>
+    <a class="btn-dashboard" href="../dashboard.html">← Back to dashboard</a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/client.js"></script>
+<script src="../js/quiz.js"></script>
+<script>
+// ─── Page config ─────────────────────────────────────────────────────────────
+const QUIZ_ID = 'prelab-3-quiz'
+
+const QUESTIONS = [
+  {
+    "q": "Your harness runs the refund task 5 times. In run 3, the agent replies \"Refund issued,\" but the payments database shows no refund was created. Which two terms describe run 3 and the database state?",
+    "opts": [
+      "Task and transcript",
+      "Transcript and grader",
+      "Trial and outcome",
+      "Trial and transcript"
+    ],
+    "ans": 2
+  },
+  {
+    "q": "After a prompt change, your capability eval drops from 40% to 35% and your regression eval drops from 100% to 80%. Which should you investigate first?",
+    "opts": [
+      "The capability eval, because it has the lower score",
+      "The regression eval, because tasks it used to solve are now failing",
+      "Neither, because both drops are within normal run-to-run variation",
+      "Both equally, by averaging them into one combined score"
+    ],
+    "ans": 1
+  },
+  {
+    "q": "A skill succeeds on 90% of individual trials. It will run k = 3 times, and all 3 runs must succeed. Which number is closest to its pass^3?",
+    "opts": [
+      "99.9%",
+      "90%",
+      "73%",
+      "27%"
+    ],
+    "ans": 2
+  },
+  {
+    "q": "For which skill is pass^k the right number to report?",
+    "opts": [
+      "A payroll skill that runs unattended every night with no human check",
+      "A tagline brainstormer where the user picks their favorite of 5 suggestions",
+      "A coding assistant that generates several candidates and keeps the one that passes tests",
+      "A flight search where finding any one valid itinerary is enough"
+    ],
+    "ans": 0
+  },
+  {
+    "q": "A skill must output dates as YYYY-MM-DD. Your LLM judge sometimes marks \"2026-13-40\" as a valid date. What is the best fix?",
+    "opts": [
+      "Switch the judge to a larger, more expensive model",
+      "Add more example dates to the judge's rubric",
+      "Run the judge three times and take the majority vote",
+      "Replace the judge with a code check that parses the date"
+    ],
+    "ans": 3
+  },
+  {
+    "q": "A booking agent fails a test because it asked a clarifying question before searching, even though it booked the correct flight. The grader checks the exact sequence of tool calls. What is the best fix?",
+    "opts": [
+      "Tell the agent never to ask clarifying questions",
+      "Change the grader to check that the correct booking exists",
+      "Add the new sequence to the list of allowed sequences",
+      "Switch the grader to human review"
+    ],
+    "ans": 1
+  },
+  {
+    "q": "Your LLM judge keeps giving high scores to long, confident answers that turn out to be wrong. Which change most directly targets this?",
+    "opts": [
+      "Add \"do not be fooled by long answers\" to the existing judge prompt",
+      "Score one concrete dimension per call, such as whether every claim traces to the source, and allow an \"Unknown\" verdict",
+      "Ask the judge to also score tone, length and helpfulness in the same call",
+      "Only show the judge the first 100 words of each answer"
+    ],
+    "ans": 1
+  },
+  {
+    "q": "GEPA finds two instruction variants. Variant A passes cases 1 and 2; Variant B passes cases 3 and 4. Both average 50%. A teammate wants to keep only A. What does GEPA do instead?",
+    "opts": [
+      "Keeps A, because it was found first",
+      "Discards both, because neither beats 50%",
+      "Runs more trials until one variant pulls ahead",
+      "Keeps both on the Pareto frontier and can combine their strengths"
+    ],
+    "ans": 3
+  },
+  {
+    "q": "You ran your optimizer against all 20 of your test cases, and the score rose from 55% to 95%. What would have made that 95% more trustworthy?",
+    "opts": [
+      "Keeping some test cases held out so the optimizer never saw them",
+      "Running the optimizer for more rounds",
+      "Using a more expensive model as the reflection model",
+      "Writing new test cases that the optimized skill already passes"
+    ],
+    "ans": 0
+  },
+  {
+    "q": "You rewrote a skill's instructions and tested them on one model, where the score improved. The skill will also be deployed on a second model. What should you do before shipping?",
+    "opts": [
+      "Nothing, since good instructions work the same on every model",
+      "Convert every rule to \"DO NOT\" phrasing so it is stricter",
+      "Re-run the eval suite on the second model too",
+      "Ship it, then rely on user complaints to catch problems"
+    ],
+    "ans": 2
+  }
+]
+
+const EXPLANATIONS = [
+  "Run 3 is one trial (one attempt at the task). The database state is the outcome: the real end state, which here contradicts what the output claimed.",
+  "A regression eval should sit near 100%, so a drop to 80% means something broke. A low capability score is expected, since those tasks are deliberately hard. Averaging the two would hide which one you are looking at.",
+  "pass^k = p^k = 0.9 x 0.9 x 0.9 = 72.9%. 99.9% is pass@3 (1 - 0.1^3), the chance that at least one run succeeds. pass^k is always at or below p.",
+  "pass^k measures whether every run succeeds, which is what matters when the skill must be right every time. The other three only need one good result out of several, which is pass@k.",
+  "Whether a date is valid has a concrete, computable answer, so a deterministic check is more reliable than a judge. Save LLM-as-a-judge for things that genuinely need judgment.",
+  "Grade the outcome, not the exact steps. Agents often find valid paths you did not anticipate, so checking whether the booking actually happened holds up better than checking one expected sequence.",
+  "Verbosity bias thrives on vague rubrics. A single concrete criterion with defined endpoints, plus an escape hatch, gives the judge something checkable instead of an overall impression.",
+  "Variants are often strong on different subsets of cases. Keeping only the best average quietly gives up what the other variant is good at. GEPA keeps both and can graft B's strength onto A.",
+  "If the optimizer tunes against every case you have, it can overfit to them. A held-out set it never sees tells you whether the improvement generalizes. Writing cases it already passes just makes the number go up.",
+  "Models differ in how well they follow negative (\"DO NOT\") versus affirmative (\"Only include\") phrasing, so the same instruction can score differently. Test every rewrite on every model you plan to deploy with."
+]
+
+// Boot
+initQuizAuth()
+</script>
+</body>
+</html>

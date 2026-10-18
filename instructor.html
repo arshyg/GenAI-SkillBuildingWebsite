@@ -134,6 +134,7 @@
           <th>Prelab 3</th>
           <th>Quiz 3</th>
           <th>Prelab 4</th>
+          <th>Quiz 4</th>
           <th>Last active</th>
         </tr>
       </thead>
@@ -312,6 +313,7 @@
         <td>${prelabPctHtml(s.prelabPct['prelab-3'])}</td>
         <td>${quizScoreHtml(s.quiz, 'prelab-3-quiz')}</td>
         <td>${prelabPctHtml(s.prelabPct['prelab-4'])}</td>
+        <td>${quizScoreHtml(s.quiz, 'prelab-4-quiz')}</td>
         <td>${formatDate(s.lastActive)}</td>
       </tr>
     `).join('')
