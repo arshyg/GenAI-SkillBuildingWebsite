@@ -159,11 +159,13 @@
         <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-p4" style="width:0%"></div></div>
         <div class="progress-label" id="label-p4">Not started</div>
       </a>
-      <div class="quiz-card locked">
+      <a class="quiz-card" href="quizzes/prelab4-quiz.html" id="card-q4">
         <div class="quiz-tag">📝 Graded Quiz</div>
         <div class="quiz-title">Prelab 4 Quiz</div>
-        <div class="quiz-meta"><span class="badge coming-soon">Coming soon</span></div>
-      </div>
+        <div class="quiz-meta" id="meta-q4">10 questions · Based on readings</div>
+        <div class="quiz-score" id="score-q4" style="display:none"></div>
+        <div class="quiz-score-label" id="score-label-q4"></div>
+      </a>
     </div>
   </div>
 
@@ -186,6 +188,7 @@
     'prelab-1-quiz': { scoreId: 'score-q1', labelId: 'score-label-q1', metaId: 'meta-q1', cardId: 'card-q1' },
     'prelab-2-quiz': { scoreId: 'score-q2', labelId: 'score-label-q2', metaId: 'meta-q2', cardId: 'card-q2' },
     'prelab-3-quiz': { scoreId: 'score-q3', labelId: 'score-label-q3', metaId: 'meta-q3', cardId: 'card-q3' },
+    'prelab-4-quiz': { scoreId: 'score-q4', labelId: 'score-label-q4', metaId: 'meta-q4', cardId: 'card-q4' },
   }
 
   async function init() {
